@@ -50,7 +50,8 @@ library(purrr)
 
 years <- seq(2012, 2016)
 make_url <- function(year) {
-    paste("http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-",
+    paste("http://prod.publicdata.landregistry.gov.uk.", 
+          "s3-website-eu-west-1.amazonaws.com/pp-",
           year,
           ".txt",
           sep = "")
@@ -120,3 +121,8 @@ by_outcode_type <- full_data %>%
 head(by_outcode_type, n = 200)
 
 write_excel_csv(by_outcode_type, "summarised_housing_data.csv")
+
+
+nrow(by_outcode_type %>% 
+         filter(n > 10))
+
