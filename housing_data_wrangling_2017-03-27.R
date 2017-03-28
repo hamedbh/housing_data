@@ -7,7 +7,7 @@ library(dplyr)
 library(readr)
 library(reshape2)
 library(purrr)
-
+library(lubridate)
 
 # Use the txt file as it seems to work better without the " characters 
 # that are in the csv.
@@ -45,7 +45,8 @@ datalist <- map(filenames,
                 function(x) read_delim(x,
                                        delim = ",",
                                        col_names = FALSE,
-                                       quoted_na = FALSE))
+                                       quoted_na = FALSE,
+                                       col_types = "cicccccccccccccc"))
 
 full_data <- bind_rows(datalist)
 
@@ -59,7 +60,7 @@ full_data$X7 <- as.factor(full_data$X7)
 
 full_data <- rename(full_data, tuid = X1, price = X2, date_of_transfer = X3, 
                     postcode = X4, property_type = X5, old_new = X6, 
-                    duration = X7, paon = X8,saon = X9, 
+                    duration = X7, paon = X8, saon = X9, 
                     street = X10, locality = X11, town = X12, 
                     district = X13, county = X14, ppd_type = X15, 
                     record_status = X16) %>% 
@@ -73,6 +74,13 @@ full_data <- rename(full_data, tuid = X1, price = X2, date_of_transfer = X3,
            incode,
            property_type, 
            everything())
+
+# Clean and standardise the dates
+
+# full_data$date_of_transfer <- 
+map(full_data$date_of_transfer, function(x) substr(x, 1, 10))
+
+date(ymd_hms(full_data[1, 2]))
 
 # Group the data by outcode and property type, then summarise with a few key 
 # stats
@@ -88,6 +96,10 @@ by_outcode_type
 
 write_excel_csv(by_outcode_type, "summarised_housing_data1_2017-03-28.csv")
 
+# Check how many rows have at least one entry
+nrow(by_outcode_type %>% 
+         filter(n_i > 0))
+
 # Check how many rows have a reasonable number of examples
 nrow(by_outcode_type %>% 
          filter(n_i > 10))
@@ -95,3 +107,15 @@ nrow(by_outcode_type %>%
 # Use RStudoio Viewer to browse the tibble
 
 View(by_outcode_type)
+
+min(by_outcode_type$n_i)
+
+
+# Try grouping by year as well as type and outcode to examine changes in price 
+# over time. First need to clean up the dates in full_data
+
+
+
+
+by_year_area_type <- full_data %>% 
+    group_by(outcode, property_type)
