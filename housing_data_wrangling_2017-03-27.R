@@ -11,9 +11,6 @@ library(lubridate)
 
 # Use the txt file as it seems to work better without the " characters 
 # that are in the csv.
-
-
-
 # Generate the form for the url and download the files
 
 make_url <- function(year) {
@@ -76,9 +73,13 @@ full_data <- rename(full_data, tuid = X1, price = X2, date_of_transfer = X3,
            everything())
 
 # Clean and standardise the dates
+full_data[[2]] <- full_data[[2]] %>% 
+    map(function(x) substr(x, 1, 10)) %>% 
+    flatten_chr() %>% 
+    as_date()
 
 # full_data$date_of_transfer <- 
-map(full_data$date_of_transfer, function(x) substr(x, 1, 10))
+map(full_data[[1]], function(x) substr(x, 1, 10))
 
 date(ymd_hms(full_data[1, 2]))
 
@@ -119,3 +120,26 @@ min(by_outcode_type$n_i)
 
 by_year_area_type <- full_data %>% 
     group_by(outcode, property_type)
+
+# Playground to work out date wrangling
+
+df <- tibble(
+    a = rnorm(10),
+    b = rnorm(10),
+    c = rnorm(10),
+    d = rnorm(10)
+)
+
+toy_dates <- full_data[1:20, 2]
+toy_dates <- flatten_chr(map(toy_dates, function(x) substr(x, 1, 10)))
+as_date(toy_dates)
+class(toy_dates)
+
+rescale01 <- function(x) {
+    rng <- range(x, na.rm = TRUE)
+    (x - rng[1]) / (rng[2] - rng[1])
+}
+
+for (i in seq_along(df)) {
+    df[[i]] <- rescale01(df[[i]])
+}
