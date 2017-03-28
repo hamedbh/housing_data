@@ -76,7 +76,7 @@ datalist <- lapply(filenames, function(x) read_delim(x,
                                                      quoted_na = FALSE))
 
 full_data <- do.call("rbind", datalist)
-
+rm(datalist)
 # df_2012 <- read_delim("pp-2012.txt", 
 #                       delim = ",",
 #                       col_names = FALSE,
