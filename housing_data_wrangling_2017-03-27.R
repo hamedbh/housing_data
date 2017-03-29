@@ -1,14 +1,12 @@
 # Get housing data for 2017 to explore
 # Import libraries for data wrangling
 
-library(httr)
 library(tidyr)
 library(dplyr)
 library(readr)
 library(reshape2)
 library(purrr)
 library(lubridate)
-library(stringr)
 
 # Use the txt file as it seems to work better without the " characters 
 # that are in the csv.
