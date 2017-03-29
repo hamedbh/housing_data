@@ -24,7 +24,9 @@ make_url <- function(year) {
 urls <- map(seq(2012, 2016), make_url)
 
 map(urls, function(x) {
-    download.file(x, basename(x))
+    if(!file.exists(basename(x))) {
+        download.file(x, basename(x))
+    }
 })
 
 # Generate form for the filenames
@@ -101,7 +103,7 @@ by_outcode_type <- full_data %>%
 # View top of the tibble and write out an intermediate summary file for Excel
 by_outcode_type
 
-write_excel_csv(by_outcode_type, "summarised_housing_data1_2017-03-28.csv")
+write_excel_csv(by_outcode_type, "housing_by_area_type_2017-03-28.csv")
 
 # Check how many rows have at least one entry
 nrow(by_outcode_type %>% 
@@ -130,4 +132,20 @@ by_year_area_type <- full_data %>%
               sd = sd(price), 
               threshold = quantile(price, 0.3))
 
+# View top of the tibble and write out an intermediate summary file for Excel
 by_year_area_type
+
+write_excel_csv(by_year_area_type, "housing_by_year_area_type_2017-03-29.csv")
+
+# Check how many rows have at least one entry
+nrow(by_year_area_type %>% 
+         filter(n_i > 0))
+
+# Check how many rows have a reasonable number of examples
+nrow(by_year_area_type %>% 
+         filter(n_i > 10))
+
+nrow(by_year_area_type %>% 
+         filter(n_i > 5))
+
+
