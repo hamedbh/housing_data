@@ -7,6 +7,7 @@ library(readr)
 library(reshape2)
 library(purrr)
 library(lubridate)
+library(stringr)
 
 # Use the txt file as it seems to work better without the " characters 
 # that are in the csv.
@@ -25,6 +26,10 @@ map(urls, function(x) {
     if(!file.exists(basename(x))) {
         download.file(x, basename(x))
     }
+    
+    else {
+        paste("File", basename(x), "already downloaded")
+    }
 })
 
 # Generate form for the filenames
@@ -35,7 +40,7 @@ make_filename <- function(year) {
           sep = "")
 }
 
-filenames <- map(seq(2012, 2016), make_filename)
+filenames <- basename(flatten_chr(urls))
 
 # Read the files into memory, then bind the data frames by row and delete the 
 # list of data frames to save memory
@@ -146,4 +151,32 @@ nrow(by_year_area_type %>%
 nrow(by_year_area_type %>% 
          filter(n_i > 5))
 
+nrow(by_year_area_type %>% 
+         filter(n_i > 3))
+
+nrow(by_year_area_type %>% 
+         filter(n_i > 2))
+
+nrow(by_year_area_type %>% 
+         filter(n_i > 1))
+
+# Use first part of outcode to generate larger n groups that can be used to 
+# examine changes in price over time
+
+eq <- full_data$outcode[1:1000]
+
+area_codes <- str_extract(eq, "[A-Z]{1,2}")
+
+area_code <- gsub("^([A-Z]{1,2})", full_data$outcode[1:10],
+                  perl = TRUE)
+
+
+
+pattern <- "\\^\\(\\[A-Z\\]\\{1\\,2\\}\\)"
+m <- gregexpr(pattern, eq)
+regmatches(eq, m)
+area_code <- regmatches(full_data$outcode[1:10], 
+                        (gregexpr("^([A-Z]{1,2})", full_data$outcode[1:10],
+                                 perl = TRUE))
+)
 
