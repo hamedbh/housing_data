@@ -177,15 +177,60 @@ full_data <- full_data %>%
 
 by_area_year_type <- full_data %>% 
     group_by(area_code, 
-             year, 
-             property_type) %>% 
+             property_type,
+             year) %>% 
     summarise(n_i = n(),
               avg_price = mean(price), 
               sd = sd(price), 
               threshold = quantile(price, 0.3))
 
+# Excluding property type O = Other leaves only 11 segments with < 5 data points
 not_other <- by_area_year_type[by_area_year_type$property_type != "O", ]
-
-min(not_other$n_i)
-
 not_other[not_other$n_i < 5, ]
+
+# Add column to calculate annual % price change in each area/type combo
+
+# pct <- function(x) {
+#     x/lag(x)
+# }
+# 
+# full_data %>% group_by(area_code,
+#                        property_type) %>% 
+#     mutate(pct_change = (price / lag(price)) - 1) %>% 
+#     
+# 
+# by_area_year_type <- by_area_year_type %>% 
+#     mutate_each(funs(lag), lag(avg_price))
+# 
+
+by_area_type <- full_data %>% 
+    group_by(area_code, 
+             property_type,
+             year) %>% 
+    arrange(area_code,
+            property_type,
+            desc(year)) %>% 
+    summarise(n_i = n(),
+              avg_price = mean(price),
+              sd = sd(price),
+              threshold = quantile(price, 0.3)) %>% 
+    mutate(pct = avg_price / lag(avg_price))
+    # mutate(pct = avg_price / lead(avg_price))
+    
+by_area_type    
+    
+    
+rev_sorted <- full_data %>% 
+    arrange(desc(date_of_transfer)) %>% 
+    group_by(area_code, 
+             property_type,
+             year) %>% 
+    arrange(area_code,
+            property_type,
+            desc(year)) %>% 
+    summarise(n_i = n(),
+              avg_price = mean(price),
+              sd = sd(price),
+              threshold = quantile(price, 0.3))
+
+rev_sorted
