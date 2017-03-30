@@ -106,7 +106,7 @@ by_outcode_type <- full_data %>%
 # View top of the tibble and write out an intermediate summary file for Excel
 by_outcode_type
 
-write_excel_csv(by_outcode_type, "housing_by_area_type_2017-03-28.csv")
+write_excel_csv(by_outcode_type, "housing_by_outcode_type_2017-03-28.csv")
 
 # Check how many rows have at least one entry
 nrow(by_outcode_type %>% 
@@ -126,7 +126,7 @@ min(by_outcode_type$n_i)
 # Try grouping by year as well as type and outcode to examine changes in price 
 # over time.
 
-by_year_area_type <- full_data %>% 
+by_year_outcode_type <- full_data %>% 
     group_by(year, 
              outcode, 
              property_type) %>% 
@@ -136,47 +136,56 @@ by_year_area_type <- full_data %>%
               threshold = quantile(price, 0.3))
 
 # View top of the tibble and write out an intermediate summary file for Excel
-by_year_area_type
+by_year_outcode_type
 
-write_excel_csv(by_year_area_type, "housing_by_year_area_type_2017-03-29.csv")
+write_excel_csv(by_year_outcode_type, 
+                "housing_by_year_outcode_type_2017-03-29.csv")
 
 # Check how many rows have at least one entry
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 0))
 
 # Check how many rows have a reasonable number of examples
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 10))
 
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 5))
 
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 3))
 
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 2))
 
-nrow(by_year_area_type %>% 
+nrow(by_year_outcode_type %>% 
          filter(n_i > 1))
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
 
-eq <- full_data$outcode[1:1000]
+full_data <- full_data %>% 
+    mutate(area_code = str_extract(outcode, "[A-Z]{1,2}")) %>% 
+    select(price, 
+           date_of_transfer, 
+           year, 
+           area_code, 
+           outcode, 
+           property_type, 
+           incode, 
+           everything())
 
-area_codes <- str_extract(eq, "[A-Z]{1,2}")
+by_area_year_type <- full_data %>% 
+    group_by(area_code, 
+             year, 
+             property_type) %>% 
+    summarise(n_i = n(),
+              avg_price = mean(price), 
+              sd = sd(price), 
+              threshold = quantile(price, 0.3))
 
-area_code <- gsub("^([A-Z]{1,2})", full_data$outcode[1:10],
-                  perl = TRUE)
+not_other <- by_area_year_type[by_area_year_type$property_type != "O", ]
 
+min(not_other$n_i)
 
-
-pattern <- "\\^\\(\\[A-Z\\]\\{1\\,2\\}\\)"
-m <- gregexpr(pattern, eq)
-regmatches(eq, m)
-area_code <- regmatches(full_data$outcode[1:10], 
-                        (gregexpr("^([A-Z]{1,2})", full_data$outcode[1:10],
-                                 perl = TRUE))
-)
-
+not_other[not_other$n_i < 5, ]
