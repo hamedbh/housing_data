@@ -1,4 +1,4 @@
-# Get housing data for 2017 to explore
+# Get housing data to explore
 # Import libraries for data wrangling
 
 library(tidyr)
@@ -14,21 +14,24 @@ library(stringr)
 # Generate the form for the url and download the files
 
 make_url <- function(year) {
-    paste("http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-",
+    paste0("http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-",
           year,
-          ".txt",
-          sep = "")
+          ".txt")
 }
 
-urls <- map(seq(2012, 2016), make_url)
+# Set years parameter to allow for easily changing the scope of the data we get
+years <- seq(2015, 2016)
 
-map(urls, function(x) {
+# Create the urls and download the data
+urls <- map_chr(years, make_url)
+setwd("/home/rstudio/housing_data/")
+if(!dir.exists("./data.")) {
+    dir.create("./data")
+}
+setwd("./data")
+walk(urls, function(x) {
     if(!file.exists(basename(x))) {
-        download.file(x, basename(x))
-    }
-    
-    else {
-        paste("File", basename(x), "already downloaded")
+        download.file(x, basename(x), method = "wget")
     }
 })
 
@@ -40,7 +43,7 @@ make_filename <- function(year) {
           sep = "")
 }
 
-filenames <- basename(flatten_chr(urls))
+filenames <- basename(urls)
 
 # Read the files into memory, then bind the data frames by row and delete the 
 # list of data frames to save memory
@@ -106,15 +109,26 @@ by_outcode_type <- full_data %>%
 # View top of the tibble and write out an intermediate summary file for Excel
 by_outcode_type
 
-write_excel_csv(by_outcode_type, "housing_by_outcode_type_2017-03-28.csv")
+write_excel_csv(by_outcode_type, 
+                paste0("housing_by_outcode_type_", 
+                       Sys.Date(),".csv"))
 
+# # Helper function to check how many rows meet a required threshold for n_i
+# pct_at_threshold <- function(df, threshold) {
+#     
+#     paste(round(100 * nrow(df %>% 
+#                                filter(n_i > threshold)) / nrow(df), 2),
+#           "% of rows have at least ", threshold, " entries.",
+#           sep = "")
+# }
 # Check how many rows have at least one entry
 nrow(by_outcode_type %>% 
          filter(n_i > 0))
 
 # Check how many rows have a reasonable number of examples
-nrow(by_outcode_type %>% 
-         filter(n_i > 10))
+paste(100 * nrow(by_outcode_type %>% 
+                     filter(n_i > 10)) / nrow(by_outcode_type), "%",
+      sep = "")
 
 # Use RStudoio Viewer to browse the tibble
 
@@ -132,14 +146,13 @@ by_year_outcode_type <- full_data %>%
              property_type) %>% 
     summarise(n_i = n(),
               avg_price = mean(price), 
-              sd = sd(price), 
-              threshold = quantile(price, 0.3))
+              sd = sd(price))
 
 # View top of the tibble and write out an intermediate summary file for Excel
 by_year_outcode_type
 
 write_excel_csv(by_year_outcode_type, 
-                "housing_by_year_outcode_type_2017-03-29.csv")
+                paste0("housing_by_year_outcode_type_", Sys.Date(), ".csv"))
 
 # Check how many rows have at least one entry
 nrow(by_year_outcode_type %>% 
