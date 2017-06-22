@@ -201,6 +201,12 @@ by_area_year_type <- full_data %>%
 not_other <- by_area_year_type[by_area_year_type$property_type != "O", ]
 not_other[not_other$n_i < 5, ]
 
+# Combine the Ordnance Survey postcode list csv files to get full list of all 
+# UK outcodes.
+fils <- list.files('Data/CSV', pattern = '.csv$', full.names = TRUE)
+
+map_df(fils, read_csv(col_names = FALSE, col_types = 'c')) %>% 
+    select(AB101AB) -> all_postcodes
 # Add column to calculate annual % price change in each area/type combo
 
 # pct <- function(x) {
