@@ -40,3 +40,6 @@ pp-2016.txt
 
 packrat/lib*/
 .Rproj.user
+
+# Large rds files
+data/full_data.rds
