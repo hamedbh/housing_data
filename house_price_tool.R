@@ -8,6 +8,7 @@ require(purrr)
 require(lubridate)
 require(stringr)
 require(magrittr)
+require(broom)
 
 
 # Function to download (if necessary) price paid data and prepare for analysis
@@ -101,59 +102,90 @@ create_full_data <- function() {
     write_rds(full_data, '~/housing_data/data/full_data.rds')
 }
 
-# ifelse will first try to read in rds file with the full_data tibble. 
-# Otherwise will run the create_full_data function.
-ifelse(file.exists('~/housing_data/data/full_data.rds'),
-       full_data <- read_rds('~/housing_data/data/full_data.rds'),
-       create_full_data)
+# If full_data is not already in memory the ifelse will first try to read in 
+# rds file with the full_data tibble, otherwise will run the create_full_data 
+# function.
+if(!exists('full_data')) {
+    ifelse(file.exists('~/housing_data/data/full_data.rds'),
+           full_data <- read_rds('~/housing_data/data/full_data.rds'),
+           create_full_data)
+}
 
 # Group the data by outcode and property type, then summarise with a few key 
 # stats
-full_data %>% 
-    group_by(outcode, property_type) %>% 
-    summarise(n_i = n(),
-              avg_price = mean(price), 
-              sd = sd(price), 
-              threshold = quantile(price, 0.3)) -> by_outcode_type
+if(!exists('by_outcde_typ')) {
+    ifelse(file.exists('~/housing_data/data/by_outcde_typ.rds'),
+           by_outcde_typ <- read_rds('~/housing_data/data/by_outcde_typ.rds'),
+           full_data %>% 
+               group_by(outcode, property_type) %>% 
+               summarise(n = n(),
+                         avg_price = mean(price), 
+                         sd = sd(price),
+                         q05 = quantile(price, .05),
+                         q10 = quantile(price, .10),
+                         q15 = quantile(price, .15), 
+                         q20 = quantile(price, .20),
+                         q25 = quantile(price, .25),
+                         q50 = quantile(price, .50),
+                         q75 = quantile(price, .75)) -> by_outcde_typ)
+}
+
+# Write out the tibble to rds
+if(!file.exists('~/housing_data/data/by_outcde_typ.rds')) {
+    write_rds(by_outcde_typ, '~/housing_data/data/by_outcde_typ.rds')
+}
 
 # View top of the tibble and write out an intermediate summary file for Excel
-by_outcode_type
+by_outcde_typ
 
-write_excel_csv(by_outcode_type, 
-                paste0("housing_by_outcode_type_", 
-                       Sys.Date(),".csv"))
+write_excel_csv(by_outcde_typ, 
+                "~/housing_data/data/by_outcde_typ.csv")
 
-# Check how many rows have a reasonable number of examples
-paste0(round((100 * nrow(by_outcode_type %>% 
-                     filter(n_i > 10)) / nrow(by_outcode_type)),
+# Check how many groups have at least 10 data points
+paste0(round((100 * nrow(by_outcde_typ %>% 
+                     filter(n > 10)) / nrow(by_outcde_typ)),
             2),
        "%")
 
 # Try grouping by year as well as type and outcode to examine changes in price 
 # over time.
-
-full_data %>% 
-    group_by(year, 
-             outcode, 
-             property_type) %>% 
-    summarise(n_i = n(),
-              avg_price = mean(price), 
-              sd = sd(price)) -> by_year_outcode_type
+if(!exists('by_yr_outcde_typ')) {
+    ifelse(file.exists('~/housing_data/data/by_yr_outcde_typ.rds'),
+           by_yr_outcde_typ <- read_rds('~/housing_data/data/by_yr_outcde_typ.rds'),
+           full_data %>% 
+               group_by(year, 
+                        outcode, 
+                        property_type) %>% 
+               summarise(n = n(),
+                         avg_price = mean(price), 
+                         sd = sd(price),
+                         q05 = quantile(price, .05),
+                         q10 = quantile(price, .10),
+                         q15 = quantile(price, .15), 
+                         q20 = quantile(price, .20),
+                         q25 = quantile(price, .25),
+                         q50 = quantile(price, .50),
+                         q75 = quantile(price, .75)) -> by_yr_outcde_typ)
+}
+# Write out the tibble to rds
+if(!file.exists('~/housing_data/data/by_yr_outcde_typ.rds')) {
+    write_rds(by_yr_outcde_typ, '~/housing_data/data/by_yr_outcde_typ.rds')
+}
 
 # View top of the tibble and write out an intermediate summary file for Excel
-by_year_outcode_type
+by_yr_outcde_typ
 
-write_excel_csv(by_year_outcode_type, 
-                paste0("housing_by_year_outcode_type_", Sys.Date(), ".csv"))
+write_excel_csv(by_yr_outcde_typ, 
+                "~/housing_data/data/by_yr_outcde_typ.csv")
 
 # Check how many rows have a reasonable number of examples
-paste0(round((100 * nrow(by_year_outcode_type %>% 
-                             filter(n_i > 5)) / nrow(by_year_outcode_type)),
+paste0(round((100 * nrow(by_yr_outcde_typ %>% 
+                             filter(n > 5)) / nrow(by_yr_outcde_typ)),
              2),
        "%")
 
-paste0(round((100 * nrow(by_year_outcode_type %>% 
-                             filter(n_i > 10)) / nrow(by_year_outcode_type)),
+paste0(round((100 * nrow(by_yr_outcde_typ %>% 
+                             filter(n > 10)) / nrow(by_yr_outcde_typ)),
              2),
        "%")
 
@@ -185,7 +217,7 @@ min(pcdes$pcde_test) == 1
 # Test whether all outcdes have required format
 min(pcdes$outcde_test) == 1
 
-# Drop cols from all_pcdes to save memory
+# Drop cols and duplicates from all_pcdes to save memory
 pcdes %>% 
     select(outcde) %>% 
     distinct(.) %>% 
@@ -204,21 +236,20 @@ bind_rows(outcdes, outcdes) %>%
 
 # Testing all_outcdes against price paid data, to see which have no/low data.
 left_join(outcdes_yrs_grps,
-          by_year_outcode_type,
+          by_yr_outcde_typ,
           by = c('outcde' = 'outcode',
                  'year' = 'year',
                  'property_type' = 'property_type'
-                 )) -> outcdes_yrs_grps
+                 )) -> grp_ppdata
 
-sapply(outcdes_yrs_grps, function(x) {max(is.na(x))})
+sapply(grp_ppdata, function(x) {max(is.na(x))})
+sapply(grp_ppdata, function(x) {sum(is.na(x))})
 
-outcdes_yrs_grps %>% 
-    filter(is.na(n_i) | n_i < 3) -> low_no_data
+grp_ppdata %>% 
+    filter(is.na(n) | n < 10) -> low_no_data
 
-
-
-
-
+# What proportion of transactions occur in areas with low/no data?
+sum(low_no_data$n, na.rm = T) / sum(grp_ppdata$n, na.rm = T)
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
@@ -234,18 +265,43 @@ full_data <- full_data %>%
            incode, 
            everything())
 
-by_area_year_type <- full_data %>% 
+by_area_yr_typ <- full_data %>%
     group_by(area_code, 
              property_type,
              year) %>% 
-    summarise(n_i = n(),
+    summarise(n = n(),
               avg_price = mean(price), 
               sd = sd(price), 
-              threshold = quantile(price, 0.3))
+              q05 = quantile(price, .05),
+              q10 = quantile(price, .10),
+              q15 = quantile(price, .15), 
+              q20 = quantile(price, .20),
+              q25 = quantile(price, .25),
+              q50 = quantile(price, .50),
+              q75 = quantile(price, .75))
 
-# Excluding property type O = Other leaves only 11 segments with < 5 data points
-not_other <- by_area_year_type[by_area_year_type$property_type != "O", ]
-not_other[not_other$n_i < 5, ]
+# Create an areas_yrs_grp table to check for missing data
+outcdes_yrs_grps %>% 
+    mutate(area_cde = str_extract(outcde, "[A-z]{1,2}")) %>% 
+    select(area_cde, year, property_type) %>% 
+    distinct(.) -> areas_yrs_grps
+
+# Set NAs to empty string
+areas_yrs_grps[is.na(areas_yrs_grps$area_cde), 1] <- ''
+
+# Test for missing data
+left_join(areas_yrs_grps,
+          by_area_yr_typ,
+          by = c('area_cde' = 'area_code',
+                 'year' = 'year',
+                 'property_type' = 'property_type'
+          )) -> grp_area_ppdata
+
+View(grp_area_ppdata)
+
+# # Excluding property type O = Other leaves only 11 segments with < 5 data points
+# not_other <- by_area_yr_typ[by_area_yr_typ$property_type != "O", ]
+# not_other[not_other$n_i < 5, ]
 
 
 
@@ -271,7 +327,7 @@ by_area_type <- full_data %>%
     arrange(area_code,
             property_type,
             desc(year)) %>% 
-    summarise(n_i = n(),
+    summarise(n = n(),
               avg_price = mean(price),
               sd = sd(price),
               threshold = quantile(price, 0.3)) %>% 
@@ -289,7 +345,7 @@ rev_sorted <- full_data %>%
     arrange(area_code,
             property_type,
             desc(year)) %>% 
-    summarise(n_i = n(),
+    summarise(n = n(),
               avg_price = mean(price),
               sd = sd(price),
               threshold = quantile(price, 0.3))
