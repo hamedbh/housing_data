@@ -2,14 +2,13 @@
 
 require(tidyr)
 require(dplyr)
+require(data.table)
 require(readr)
 require(reshape2)
 require(purrr)
 require(lubridate)
 require(stringr)
 require(magrittr)
-require(broom)
-
 
 # Function to download (if necessary) price paid data and prepare for analysis
 create_full_data <- function() {
@@ -25,11 +24,10 @@ create_full_data <- function() {
     
     # Create the urls and download the data
     urls <- map_chr(years, make_url)
-    setwd("/home/rstudio/housing_data/")
-    if(!dir.exists("./data.")) {
-        dir.create("./data")
+    if(!dir.exists("~/housing_data/data/")) {
+        dir.create("~/housing_data/data/")
     }
-    setwd("./data")
+    setwd("~/housing_data/data")
     walk(urls, function(x) {
         if(!file.exists(basename(x))) {
             download.file(x, basename(x), method = "wget")
@@ -49,145 +47,94 @@ create_full_data <- function() {
     # Read the files into memory, then bind the data frames by row and delete the 
     # list of data frames to save memory
     datalist <- map(filenames, 
-                    function(x) read_delim(x,
-                                           delim = ",",
-                                           col_names = FALSE,
-                                           quoted_na = FALSE,
-                                           col_types = "cicccccccccccccc"))
+                    function(x) fread(x,
+                                      sep = ",",
+                                      header = F, 
+                                      col.names = c('tuid', 'price', 
+                                                    'date_of_transfer', 
+                                                    'postcde', 'prop_typ', 
+                                                    'old_new', 'duration', 
+                                                    'paon', 'saon', 'street', 
+                                                    'locality', 'town', 
+                                                    'district', 'county', 
+                                                    'ppd_type', 
+                                                    'rec_status')))
     
-    full_data <- bind_rows(datalist)
+    full_data <- rbindlist(datalist)
     
     rm(datalist)
     
     # Clean up the data: change certain columns to factors, set names for columns, 
     # and reorder them.
-    full_data$X5 <- as.factor(full_data$X5)
-    full_data$X6 <- as.factor(full_data$X6)
-    full_data$X7 <- as.factor(full_data$X7)
+    full_data <- full_data[, prop_typ := as.factor(prop_typ)]
+    full_data <- full_data[, old_new := as.factor(old_new)]
+    full_data <- full_data[, duration := as.factor(duration)]
     
-    full_data <- rename(full_data, tuid = X1, price = X2, date_of_transfer = X3, 
-                        postcode = X4, property_type = X5, old_new = X6, 
-                        duration = X7, paon = X8, saon = X9, 
-                        street = X10, locality = X11, town = X12, 
-                        district = X13, county = X14, ppd_type = X15, 
-                        record_status = X16) %>% 
-        separate(postcode, 
-                 into = c("outcode", "incode"), 
+    full_data %>%
+        separate(postcde, 
+                 into = c("outcde", "incde"), 
                  sep = "\\ ",
                  extra = "merge",
                  fill = "right") %>% 
         select(price, date_of_transfer, 
-               outcode, 
-               incode,
-               property_type, 
-               everything())
+               outcde, 
+               incde,
+               prop_typ, 
+               everything()) -> full_data
     
     # Clean and standardise the dates, add column for year
-    full_data[[2]] <- full_data[[2]] %>% 
-        map(function(x) substr(x, 1, 10)) %>% 
-        flatten_chr() %>% 
-        as_date()
+    full_data <- full_data[, date_of_transfer := as_date(date_of_transfer)]
+    full_data <- full_data[, year := year(date_of_transfer)]
     
-    full_data <- full_data %>% 
-        mutate(year = year(date_of_transfer)) %>% 
+    full_data %>%
         select(price, 
                date_of_transfer, 
                year, 
-               outcode, 
-               property_type, 
-               incode, 
-               everything())
+               outcde, 
+               incde, 
+               prop_typ, 
+               everything()) -> full_data
     
     # Write out full_data to rds to save reprocessing
-    write_rds(full_data, '~/housing_data/data/full_data.rds')
+    saveRDS(full_data, '~/housing_data/data/full_data.rds')
 }
 
 # If full_data is not already in memory the ifelse will first try to read in 
-# rds file with the full_data tibble, otherwise will run the create_full_data 
-# function.
+# rds file with the full_data data.table, otherwise will run the 
+# create_full_data function.
 if(!exists('full_data')) {
     ifelse(file.exists('~/housing_data/data/full_data.rds'),
-           full_data <- read_rds('~/housing_data/data/full_data.rds'),
-           create_full_data)
+           full_data <- as.data.table(readRDS('~/housing_data/data/full_data.rds')),
+           create_full_data())
 }
 
-# Group the data by outcode and property type, then summarise with a few key 
-# stats
-if(!exists('by_outcde_typ')) {
-    ifelse(file.exists('~/housing_data/data/by_outcde_typ.rds'),
-           by_outcde_typ <- read_rds('~/housing_data/data/by_outcde_typ.rds'),
-           full_data %>% 
-               group_by(outcode, property_type) %>% 
-               summarise(n = n(),
-                         avg_price = mean(price), 
-                         sd = sd(price),
-                         q05 = quantile(price, .05),
-                         q10 = quantile(price, .10),
-                         q15 = quantile(price, .15), 
-                         q20 = quantile(price, .20),
-                         q25 = quantile(price, .25),
-                         q50 = quantile(price, .50),
-                         q75 = quantile(price, .75)) -> by_outcde_typ)
+# Group the data by outcode, year, and property type, then summarise with a few 
+# key stats
+if(!exists('by_outcde_yr_typ')) {
+    ifelse(file.exists('~/housing_data/data/by_outcde_yr_typ.rds'),
+           by_outcde_yr_typ <- as.data.table(readRDS('~/housing_data/data/by_outcde_yr_typ.rds')),
+           by_outcde_yr_typ <- full_data[, .(.N, avg_price = mean(price),
+                                             sd = sd(price),
+                                             q05 = quantile(price, .05),
+                                             q10 = quantile(price, .10),
+                                             q15 = quantile(price, .15), 
+                                             q20 = quantile(price, .20),
+                                             q25 = quantile(price, .25),
+                                             q50 = quantile(price, .50)), 
+                                         keyby = .(outcde, prop_typ, year)])
 }
 
-# Write out the tibble to rds
-if(!file.exists('~/housing_data/data/by_outcde_typ.rds')) {
-    write_rds(by_outcde_typ, '~/housing_data/data/by_outcde_typ.rds')
+# Write out the data.table to rds
+if(!file.exists('~/housing_data/data/by_outcde_yr_typ.rds')) {
+    saveRDS(by_outcde_yr_typ, '~/housing_data/data/by_outcde_yr_typ.rds')
 }
-
-# View top of the tibble and write out an intermediate summary file for Excel
-by_outcde_typ
-
-write_excel_csv(by_outcde_typ, 
-                "~/housing_data/data/by_outcde_typ.csv")
 
 # Check how many groups have at least 10 data points
-paste0(round((100 * nrow(by_outcde_typ %>% 
-                     filter(n > 10)) / nrow(by_outcde_typ)),
+paste0(round((100 * nrow(by_outcde_yr_typ %>% 
+                     filter(N > 10)) / nrow(by_outcde_yr_typ)),
             2),
        "%")
 
-# Try grouping by year as well as type and outcode to examine changes in price 
-# over time.
-if(!exists('by_yr_outcde_typ')) {
-    ifelse(file.exists('~/housing_data/data/by_yr_outcde_typ.rds'),
-           by_yr_outcde_typ <- read_rds('~/housing_data/data/by_yr_outcde_typ.rds'),
-           full_data %>% 
-               group_by(year, 
-                        outcode, 
-                        property_type) %>% 
-               summarise(n = n(),
-                         avg_price = mean(price), 
-                         sd = sd(price),
-                         q05 = quantile(price, .05),
-                         q10 = quantile(price, .10),
-                         q15 = quantile(price, .15), 
-                         q20 = quantile(price, .20),
-                         q25 = quantile(price, .25),
-                         q50 = quantile(price, .50),
-                         q75 = quantile(price, .75)) -> by_yr_outcde_typ)
-}
-# Write out the tibble to rds
-if(!file.exists('~/housing_data/data/by_yr_outcde_typ.rds')) {
-    write_rds(by_yr_outcde_typ, '~/housing_data/data/by_yr_outcde_typ.rds')
-}
-
-# View top of the tibble and write out an intermediate summary file for Excel
-by_yr_outcde_typ
-
-write_excel_csv(by_yr_outcde_typ, 
-                "~/housing_data/data/by_yr_outcde_typ.csv")
-
-# Check how many rows have a reasonable number of examples
-paste0(round((100 * nrow(by_yr_outcde_typ %>% 
-                             filter(n > 5)) / nrow(by_yr_outcde_typ)),
-             2),
-       "%")
-
-paste0(round((100 * nrow(by_yr_outcde_typ %>% 
-                             filter(n > 10)) / nrow(by_yr_outcde_typ)),
-             2),
-       "%")
 
 # Combine the Ordnance Survey postcode list csv files to get full list of all 
 # UK outcodes.
@@ -195,61 +142,66 @@ fils <- list.files('~/housing_data/data/OS_data',
                    pattern = '.csv$', 
                    full.names = TRUE)
 
-pcdes <- map_df(fils, function(x) {
-    
-    read_csv(x, 
-             col_names = FALSE,
-             col_types = 'ciiicccccc')
-    
-}) %>% 
-    select(pcde = X1) %>% 
-    mutate(pcde = str_replace_all(pcde, " ", ""),
-           outcde = str_sub(pcde, end = -4), 
-           len_test = nchar(outcde), 
-           pcde_test = str_detect(pcde, 
-                                  "[A-z]{1,2}\\d{1,2}[A-z]?\\d[A-z]{2}"),
-           outcde_test = str_detect(outcde,
-                                    "[A-z]{1,2}\\d{1,2}[A-z]?"))
+pcdes <- rbindlist(lapply(fils, 
+                          fread))[, .(pcde = paste(str_extract(V1, 
+                                                               '^[A-z]{1,2}\\d{1,2}[A-z]?'),
+                                                   str_extract(V1, 
+                                                               '\\d[A-z]{2}$')),
+                                      outcde = str_extract(V1, 
+                                                           '^[A-z]{1,2}\\d{1,2}[A-z]?'),
+                                      incde = str_extract(V1, 
+                                                          '\\d[A-z]{2}$'))]
+
 
 # Test whether all pcdes have required format
-min(pcdes$pcde_test) == 1
+min(str_detect(pcdes$pcde, "[A-z]{1,2}\\d{1,2}[A-z]? \\d[A-z]{2}")) == 1
 
 # Test whether all outcdes have required format
-min(pcdes$outcde_test) == 1
+min(str_detect(pcdes$outcde, "[A-z]{1,2}\\d{1,2}[A-z]?")) == 1
 
-# Drop cols and duplicates from all_pcdes to save memory
-pcdes %>% 
-    select(outcde) %>% 
-    distinct(.) %>% 
-    add_row(outcde = '', .before = 1) -> outcdes
+# Drop cols and duplicates from pcdes to save memory
+outcdes <- rbindlist(list(list(''), 
+                          unique(pcdes[, .(outcde)])))
 
 rm(pcdes)
 
 # Prepare all_outcdes for binding with year and type data
-bind_rows(outcdes, outcdes) %>% 
-    bind_cols(., tibble(year = rep(2015:2016, 
-                                   each = 2881))) %>% 
-    inner_join(., 
-               tibble(property_type = as.factor(rep(c('D', 'F', 'O', 'S', 'T'),
-                                                    times = 2)),
-                      year = rep(2015:2016, each = 5))) -> outcdes_yrs_grps
+outcdes_yrs_typs <- CJ(outcde = outcdes$outcde, 
+                       year = 2015:2016,
+                       prop_typ = c('D', 'F', 'O', 'S', 'T'))
 
-# Testing all_outcdes against price paid data, to see which have no/low data.
-left_join(outcdes_yrs_grps,
-          by_yr_outcde_typ,
-          by = c('outcde' = 'outcode',
-                 'year' = 'year',
-                 'property_type' = 'property_type'
-                 )) -> grp_ppdata
 
-sapply(grp_ppdata, function(x) {max(is.na(x))})
-sapply(grp_ppdata, function(x) {sum(is.na(x))})
+# Left Join full list of outcodes with the price paid data, see which have no 
+# data. Add logical for Scottish pcdes.
+scot_area_cdes <- c('AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV',
+                    'KA', 'KW', 'KY', 'ML', 'PA', 'PH', 'TD', 'ZE')
+scot_outcde_regx <- paste0('^',
+                           scot_area_cdes,
+                           '[0-9]{1,2}',
+                           collapse = '|')
+#### Resume here dickhead ######
+all_ppdata <- merge(outcdes_yrs_typs, by_outcde_yr_typ, all.x = T)[
+    ,
+    scottish := (grepl(scot_outcde_regx, outcde))
+]
+sapply(all_ppdata, function(x) {max(is.na(x))})
+sapply(all_ppdata, function(x) {sum(is.na(x))})
 
-grp_ppdata %>% 
-    filter(is.na(n) | n < 10) -> low_no_data
+# Mark and separate Scottish data
+all_ppdata <- all_ppdata[, .(outcde, year, prop_typ, N, sd, q05, q10, q15, q20, 
+                             q25, q50, 
+                             scottish = !is.na(grep(scot_outcde_regx, outcde)))]
+scot_area_cdes <- c('AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV',
+                    'KA', 'KW', 'KY', 'ML', 'PA', 'PH', 'TD', 'ZE')
+scot_outcde_regx <- paste0('^',
+                           scot_area_cdes,
+                           '[0-9]{1,2}',
+                           collapse = '|')
+scot_ppdata <- all_ppdata[outcde %like% scot_outcde_regx]
 
+good_ppdata <- all_ppdata[!outcde %like% scot_outcde_regx]
 # What proportion of transactions occur in areas with low/no data?
-sum(low_no_data$n, na.rm = T) / sum(grp_ppdata$n, na.rm = T)
+sum(low_no_data$n, na.rm = T) / sum(all_ppdata$n, na.rm = T)
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
@@ -281,7 +233,7 @@ by_area_yr_typ <- full_data %>%
               q75 = quantile(price, .75))
 
 # Create an areas_yrs_grp table to check for missing data
-outcdes_yrs_grps %>% 
+outcdes_yrs_typs %>% 
     mutate(area_cde = str_extract(outcde, "[A-z]{1,2}")) %>% 
     select(area_cde, year, property_type) %>% 
     distinct(.) -> areas_yrs_grps
