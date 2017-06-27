@@ -24,10 +24,10 @@ create_full_data <- function() {
     
     # Create the urls and download the data
     urls <- map_chr(years, make_url)
-    if(!dir.exists("~/housing_data/data/")) {
-        dir.create("~/housing_data/data/")
+    if(!dir.exists("/data/")) {
+        dir.create("/data/")
     }
-    setwd("~/housing_data/data")
+    setwd("/data")
     walk(urls, function(x) {
         if(!file.exists(basename(x))) {
             download.file(x, basename(x), method = "wget")
@@ -66,9 +66,16 @@ create_full_data <- function() {
     
     # Clean up the data: change certain columns to factors, set names for columns, 
     # and reorder them.
-    full_data <- full_data[, prop_typ := as.factor(prop_typ)]
-    full_data <- full_data[, old_new := as.factor(old_new)]
-    full_data <- full_data[, duration := as.factor(duration)]
+    full_data <- full_data[
+        , 
+        prop_typ := as.factor(prop_typ)
+        ][
+        , 
+        old_new := as.factor(old_new)
+        ][
+            ,
+            duration := as.factor(duration)
+        ]
     
     full_data %>%
         separate(postcde, 
@@ -83,8 +90,11 @@ create_full_data <- function() {
                everything()) -> full_data
     
     # Clean and standardise the dates, add column for year
-    full_data <- full_data[, date_of_transfer := as_date(date_of_transfer)]
-    full_data <- full_data[, year := year(date_of_transfer)]
+    full_data <- full_data[, 
+                           date_of_transfer := as_date(date_of_transfer)][
+                               , 
+                               year := year(date_of_transfer)
+                           ]
     
     full_data %>%
         select(price, 
@@ -96,21 +106,23 @@ create_full_data <- function() {
                everything()) -> full_data
     
     # Write out full_data to rds to save reprocessing
-    saveRDS(full_data, '~/housing_data/data/full_data.rds')
+    setwd('..')
+    saveRDS(full_data, './data/full_data.rds')
 }
 
 # If full_data is not already in memory the ifelse will first try to read in 
 # rds file with the full_data data.table, otherwise will run the 
 # create_full_data function.
 if(!exists('full_data')) {
-    ifelse(file.exists('~/housing_data/data/full_data.rds'),
-           full_data <- as.data.table(readRDS('~/housing_data/data/full_data.rds')),
+    ifelse(file.exists('./data/full_data.rds'),
+           full_data <- as.data.table(readRDS('./data/full_data.rds')),
            create_full_data())
 }
 
 # Group the data by outcode, year, and property type, then summarise with a few 
 # key stats
 if(!exists('by_outcde_yr_typ')) {
+<<<<<<< HEAD
     ifelse(file.exists('~/housing_data/data/by_outcde_yr_typ.rds'),
            by_outcde_yr_typ <- as.data.table(readRDS('~/housing_data/data/by_outcde_yr_typ.rds')),
            by_outcde_yr_typ <- full_data[, 
@@ -142,19 +154,20 @@ paste0(round((100 * nrow(by_outcde_yr_typ %>%
 
 # Combine the Ordnance Survey postcode list csv files to get full list of all 
 # UK outcodes.
-fils <- list.files('~/housing_data/data/OS_data', 
+fils <- list.files('./data/OS_data', 
                    pattern = '.csv$', 
                    full.names = TRUE)
 
 pcdes <- rbindlist(lapply(fils, 
-                          fread))[, .(pcde = paste(str_extract(V1, 
-                                                               '^[A-z]{1,2}\\d{1,2}[A-z]?'),
-                                                   str_extract(V1, 
-                                                               '\\d[A-z]{2}$')),
-                                      outcde = str_extract(V1, 
-                                                           '^[A-z]{1,2}\\d{1,2}[A-z]?'),
-                                      incde = str_extract(V1, 
-                                                          '\\d[A-z]{2}$'))]
+                          fread))[, 
+                                  .(pcde = paste(str_extract(V1, 
+                                                             '^[A-z]{1,2}\\d{1,2}[A-z]?'),
+                                                 str_extract(V1, 
+                                                             '\\d[A-z]{2}$')),
+                                    outcde = str_extract(V1, 
+                                                         '^[A-z]{1,2}\\d{1,2}[A-z]?'),
+                                    incde = str_extract(V1, 
+                                                        '\\d[A-z]{2}$'))]
 
 
 # Test whether all pcdes have required format
