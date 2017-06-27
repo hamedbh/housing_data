@@ -113,14 +113,18 @@ if(!exists('full_data')) {
 if(!exists('by_outcde_yr_typ')) {
     ifelse(file.exists('~/housing_data/data/by_outcde_yr_typ.rds'),
            by_outcde_yr_typ <- as.data.table(readRDS('~/housing_data/data/by_outcde_yr_typ.rds')),
-           by_outcde_yr_typ <- full_data[, .(.N, avg_price = mean(price),
-                                             sd = sd(price),
-                                             q05 = quantile(price, .05),
-                                             q10 = quantile(price, .10),
-                                             q15 = quantile(price, .15), 
-                                             q20 = quantile(price, .20),
-                                             q25 = quantile(price, .25),
-                                             q50 = quantile(price, .50)), 
+           by_outcde_yr_typ <- full_data[, 
+                                         
+                                         .(.N, 
+                                           avg_price = mean(price),
+                                           median = quantile(price, .50),
+                                           sd = sd(price),
+                                           q25 = quantile(price, .25),
+                                           q20 = quantile(price, .20),
+                                           q15 = quantile(price, .15),
+                                           q10 = quantile(price, .10),
+                                           q05 = quantile(price, .05)), 
+                                         
                                          keyby = .(outcde, prop_typ, year)])
 }
 
@@ -179,7 +183,8 @@ scot_outcde_regx <- paste0('^',
                            scot_area_cdes,
                            '[0-9]{1,2}',
                            collapse = '|')
-#### Resume here dickhead ######
+setkey(outcdes_yrs_typs, outcde, prop_typ, year)
+setkey(by_outcde_yr_typ, outcde, prop_typ, year)
 all_ppdata <- merge(outcdes_yrs_typs, by_outcde_yr_typ, all.x = T)[
     ,
     scottish := (grepl(scot_outcde_regx, outcde))
@@ -187,20 +192,16 @@ all_ppdata <- merge(outcdes_yrs_typs, by_outcde_yr_typ, all.x = T)[
 sapply(all_ppdata, function(x) {max(is.na(x))})
 sapply(all_ppdata, function(x) {sum(is.na(x))})
 
-# Mark and separate Scottish data
-all_ppdata <- all_ppdata[, .(outcde, year, prop_typ, N, sd, q05, q10, q15, q20, 
-                             q25, q50, 
-                             scottish = !is.na(grep(scot_outcde_regx, outcde)))]
-scot_area_cdes <- c('AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV',
-                    'KA', 'KW', 'KY', 'ML', 'PA', 'PH', 'TD', 'ZE')
-scot_outcde_regx <- paste0('^',
-                           scot_area_cdes,
-                           '[0-9]{1,2}',
-                           collapse = '|')
-scot_ppdata <- all_ppdata[outcde %like% scot_outcde_regx]
+# Separate Scottish data
+main_ppdata <- all_ppdata[scottish == FALSE]
+scot_ppdata <- all_ppdata[scottish == TRUE]
 
-good_ppdata <- all_ppdata[!outcde %like% scot_outcde_regx]
 # What proportion of transactions occur in areas with low/no data?
+main_ppdata[, 
+            .N, 
+            .(low_data = (N < 5 | is.na(N)))
+            ]
+
 sum(low_no_data$n, na.rm = T) / sum(all_ppdata$n, na.rm = T)
 
 # Use first part of outcode to generate larger n groups that can be used to 
