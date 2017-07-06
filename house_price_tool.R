@@ -1,14 +1,14 @@
 # Import libraries for data wrangling
 
-require(tidyr)
-require(dplyr)
-require(data.table)
-require(readr)
-require(reshape2)
-require(purrr)
-require(lubridate)
-require(stringr)
-require(magrittr)
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(readr)
+library(reshape2)
+library(purrr)
+library(lubridate)
+library(stringr)
+library(magrittr)
 
 # Function to download (if necessary) price paid data and prepare for analysis
 create_full_data <- function() {
@@ -122,9 +122,8 @@ if(!exists('full_data')) {
 # Group the data by outcode, year, and property type, then summarise with a few 
 # key stats
 if(!exists('by_outcde_yr_typ')) {
-<<<<<<< HEAD
-    ifelse(file.exists('~/housing_data/data/by_outcde_yr_typ.rds'),
-           by_outcde_yr_typ <- as.data.table(readRDS('~/housing_data/data/by_outcde_yr_typ.rds')),
+    ifelse(file.exists('/data/by_outcde_yr_typ.rds'),
+           by_outcde_yr_typ <- as.data.table(readRDS('/data/by_outcde_yr_typ.rds')),
            by_outcde_yr_typ <- full_data[, 
                                          
                                          .(.N, 
@@ -210,60 +209,68 @@ main_ppdata <- all_ppdata[scottish == FALSE]
 scot_ppdata <- all_ppdata[scottish == TRUE]
 
 # What proportion of transactions occur in areas with low/no data?
+data_quality_summ <- main_ppdata[
+    , 
+    .(N = .N,
+      N10_more = sum(N >= 10, na.rm = T),
+      N05_more = sum(N >= 5, na.rm = T),
+      no_data = sum(is.na(N)))
+]
 main_ppdata[, 
             .N, 
-            .(low_data = (N < 5 | is.na(N)))
+            keyby = .(low_data = (N < 10 & !is.na(N)),
+                      no_data = is.na(N))
             ]
 
-sum(low_no_data$n, na.rm = T) / sum(all_ppdata$n, na.rm = T)
+
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
 
-full_data <- full_data %>% 
-    mutate(area_code = str_extract(outcode, "[A-Z]{1,2}")) %>% 
-    select(price, 
-           date_of_transfer, 
-           year, 
-           area_code, 
-           outcode, 
-           property_type, 
-           incode, 
-           everything())
-
-by_area_yr_typ <- full_data %>%
-    group_by(area_code, 
-             property_type,
-             year) %>% 
-    summarise(n = n(),
-              avg_price = mean(price), 
-              sd = sd(price), 
-              q05 = quantile(price, .05),
-              q10 = quantile(price, .10),
-              q15 = quantile(price, .15), 
-              q20 = quantile(price, .20),
-              q25 = quantile(price, .25),
-              q50 = quantile(price, .50),
-              q75 = quantile(price, .75))
-
-# Create an areas_yrs_grp table to check for missing data
-outcdes_yrs_typs %>% 
-    mutate(area_cde = str_extract(outcde, "[A-z]{1,2}")) %>% 
-    select(area_cde, year, property_type) %>% 
-    distinct(.) -> areas_yrs_grps
-
-# Set NAs to empty string
-areas_yrs_grps[is.na(areas_yrs_grps$area_cde), 1] <- ''
-
-# Test for missing data
-left_join(areas_yrs_grps,
-          by_area_yr_typ,
-          by = c('area_cde' = 'area_code',
-                 'year' = 'year',
-                 'property_type' = 'property_type'
-          )) -> grp_area_ppdata
-
-View(grp_area_ppdata)
+# full_data <- full_data %>% 
+#     mutate(area_code = str_extract(outcode, "[A-Z]{1,2}")) %>% 
+#     select(price, 
+#            date_of_transfer, 
+#            year, 
+#            area_code, 
+#            outcode, 
+#            property_type, 
+#            incode, 
+#            everything())
+# 
+# by_area_yr_typ <- full_data %>%
+#     group_by(area_code, 
+#              property_type,
+#              year) %>% 
+#     summarise(n = n(),
+#               avg_price = mean(price), 
+#               sd = sd(price), 
+#               q05 = quantile(price, .05),
+#               q10 = quantile(price, .10),
+#               q15 = quantile(price, .15), 
+#               q20 = quantile(price, .20),
+#               q25 = quantile(price, .25),
+#               q50 = quantile(price, .50),
+#               q75 = quantile(price, .75))
+# 
+# # Create an areas_yrs_grp table to check for missing data
+# outcdes_yrs_typs %>% 
+#     mutate(area_cde = str_extract(outcde, "[A-z]{1,2}")) %>% 
+#     select(area_cde, year, property_type) %>% 
+#     distinct(.) -> areas_yrs_grps
+# 
+# # Set NAs to empty string
+# areas_yrs_grps[is.na(areas_yrs_grps$area_cde), 1] <- ''
+# 
+# # Test for missing data
+# left_join(areas_yrs_grps,
+#           by_area_yr_typ,
+#           by = c('area_cde' = 'area_code',
+#                  'year' = 'year',
+#                  'property_type' = 'property_type'
+#           )) -> grp_area_ppdata
+# 
+# View(grp_area_ppdata)
 
 # # Excluding property type O = Other leaves only 11 segments with < 5 data points
 # not_other <- by_area_yr_typ[by_area_yr_typ$property_type != "O", ]
@@ -286,34 +293,34 @@ View(grp_area_ppdata)
 #     mutate_each(funs(lag), lag(avg_price))
 # 
 
-by_area_type <- full_data %>% 
-    group_by(area_code, 
-             property_type,
-             year) %>% 
-    arrange(area_code,
-            property_type,
-            desc(year)) %>% 
-    summarise(n = n(),
-              avg_price = mean(price),
-              sd = sd(price),
-              threshold = quantile(price, 0.3)) %>% 
-    mutate(pct = avg_price / lag(avg_price))
-    # mutate(pct = avg_price / lead(avg_price))
-    
-by_area_type    
-    
-    
-rev_sorted <- full_data %>% 
-    arrange(desc(date_of_transfer)) %>% 
-    group_by(area_code, 
-             property_type,
-             year) %>% 
-    arrange(area_code,
-            property_type,
-            desc(year)) %>% 
-    summarise(n = n(),
-              avg_price = mean(price),
-              sd = sd(price),
-              threshold = quantile(price, 0.3))
-
-rev_sorted
+# by_area_type <- full_data %>% 
+#     group_by(area_code, 
+#              property_type,
+#              year) %>% 
+#     arrange(area_code,
+#             property_type,
+#             desc(year)) %>% 
+#     summarise(n = n(),
+#               avg_price = mean(price),
+#               sd = sd(price),
+#               threshold = quantile(price, 0.3)) %>% 
+#     mutate(pct = avg_price / lag(avg_price))
+#     # mutate(pct = avg_price / lead(avg_price))
+#     
+# by_area_type    
+#     
+#     
+# rev_sorted <- full_data %>% 
+#     arrange(desc(date_of_transfer)) %>% 
+#     group_by(area_code, 
+#              property_type,
+#              year) %>% 
+#     arrange(area_code,
+#             property_type,
+#             desc(year)) %>% 
+#     summarise(n = n(),
+#               avg_price = mean(price),
+#               sd = sd(price),
+#               threshold = quantile(price, 0.3))
+# 
+# rev_sorted
