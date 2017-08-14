@@ -222,7 +222,7 @@ main_ppdata[,
                       no_data = is.na(N))
             ]
 
-
+write_excel_csv(main_ppdata, './data/main_ppdata.csv')
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
