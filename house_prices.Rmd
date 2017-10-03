@@ -1,15 +1,32 @@
-# Import libraries for data wrangling
+---
+title: "Using Land Registry Data to Estimate Market Value of Property by Area"
+output: html_notebook
+---
 
+This analysis uses the publicly available data from the Land Registry to 
+estimate a reasonable market value for each property type in each area. The 
+conclusion is that the data are sufficient to set fairly broad, but useful, 
+boundaries for transactions at 'fair market value' in most areas.
+
+## Data Preparation
+
+To begin with we load the libraries required for the analysis.
+
+```{r, message=FALSE, warning=FALSE}
 library(tidyr)
 library(dplyr)
 library(data.table)
 library(readr)
-library(reshape2)
 library(purrr)
 library(lubridate)
 library(stringr)
-library(magrittr)
+```
 
+Now we create a function that will check whether the price paid data are present 
+locally. If so it will read that into memory as `full_data`. If not it will 
+download the price paid data and create the `full_data` object.
+
+```{r}
 # Function to download (if necessary) price paid data and prepare for analysis
 create_full_data <- function() {
     
@@ -109,16 +126,29 @@ create_full_data <- function() {
     setwd('..')
     saveRDS(full_data, './data/full_data.rds')
 }
+```
 
-# If full_data is not already in memory the ifelse will first try to read in 
-# rds file with the full_data data.table, otherwise will run the 
-# create_full_data function.
+The next step is to run that function, checking first that the required object 
+is not already in memory.
+
+NB. These extra steps are to prevent unnecessary downloading of the data or 
+creation of the data objects, as they are rather large.
+
+```{r, results = 'hide'}
 if(!exists('full_data')) {
     ifelse(file.exists('./data/full_data.rds'),
-           full_data <- as.data.table(readRDS('./data/full_data.rds')),
+           invisible(full_data <- as.data.table(readRDS('./data/full_data.rds'))),
            create_full_data())
 }
+```
 
+## Data Munging
+
+Now apply grouping and summarising functions to the data to get what we need: 
+entries for each combination of year, property type, and postcode area/outcode 
+(e.g. M33, UB6).
+
+```{r, results = 'hide'}
 # Group the data by outcode, year, and property type, then summarise with a few 
 # key stats
 if(!exists('by_outcde_yr_typ')) {
@@ -130,23 +160,37 @@ if(!exists('by_outcde_yr_typ')) {
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
-                                           q25 = quantile(price, .25)), 
-                                         
+                                           q25 = quantile(price, .25)),
                                          keyby = .(outcde, prop_typ, year)])
 }
+```
 
+Save the summarised table to file to speed up the process when re-running.
+
+```{r}
 # Write out the data.table to rds
 if(!file.exists('~/housing_data/data/by_outcde_yr_typ.rds')) {
     saveRDS(by_outcde_yr_typ, '~/housing_data/data/by_outcde_yr_typ.rds')
 }
+```
 
+Run a quick check for data quality.
+
+```{r}
 # Check how many groups have at least 10 data points
 paste0(round((100 * nrow(by_outcde_yr_typ %>% 
-                     filter(N > 10)) / nrow(by_outcde_yr_typ)),
-            2),
-       "%")
+                     filter(N > 10)) / nrow(by_outcde_yr_typ))),
+       "% of outcode, year, property type groups have at least 10 data points.")
+```
 
+The next step is to compare our list to the reference list of postcode areas, 
+to ensure that we have entries for every possible combination (since any groups 
+with no transactions will be missing from our list).
 
+In this analysis the postcode lists have already been downloaded from the 
+Ordnance Survey in `.csv` format, and stored in a directory called `OS_data`. 
+
+```{r}
 # Combine the Ordnance Survey postcode list csv files to get full list of all 
 # UK outcodes.
 fils <- list.files('./data/OS_data', 
@@ -163,26 +207,47 @@ pcdes <- rbindlist(lapply(fils,
                                                          '^[A-z]{1,2}\\d{1,2}[A-z]?'),
                                     incde = str_extract(V1, 
                                                         '\\d[A-z]{2}$'))]
+```
 
+Now test that the postcodes all fit the required format.
 
+```{r}
 # Test whether all pcdes have required format
 min(str_detect(pcdes$pcde, "[A-z]{1,2}\\d{1,2}[A-z]? \\d[A-z]{2}")) == 1
+```
 
+```{r}
 # Test whether all outcdes have required format
 min(str_detect(pcdes$outcde, "[A-z]{1,2}\\d{1,2}[A-z]?")) == 1
+```
 
+We only need the outcodes, so we can reduce the size of the object dramatically. 
+Importantly we add a row for a blank string, to match to those sales in the 
+price paid data with no geographical location.
+
+Then we cross join that table with all possible years and property types.
+
+
+```{r}
 # Drop cols and duplicates from pcdes to save memory
 outcdes <- rbindlist(list(list(''), 
                           unique(pcdes[, .(outcde)])))
 
-rm(pcdes)
-
 # Prepare all_outcdes for binding with year and type data
 outcdes_yrs_typs <- CJ(outcde = outcdes$outcde, 
-                       year = 2015:2016,
+                       year = 2014:2017,
                        prop_typ = c('D', 'F', 'O', 'S', 'T'))
 
+```
 
+We now join the outcodes to the price paid data, and add a logical column to 
+flag Scottish postcodes. Due to the separation of Scottish property taxes we 
+will remove those areas from the analysis.
+
+The two `sapply()` operations at the end of this section test for missing 
+values in the combined dataset.
+
+```{r}
 # Left Join full list of outcodes with the price paid data, see which have no 
 # data. Add logical for Scottish pcdes.
 scot_area_cdes <- c('AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV',
@@ -199,124 +264,123 @@ all_ppdata <- merge(outcdes_yrs_typs, by_outcde_yr_typ, all.x = T)[
 ]
 sapply(all_ppdata, function(x) {max(is.na(x))})
 sapply(all_ppdata, function(x) {sum(is.na(x))})
+```
 
+Now we separate the Scottish data, leaving an object `main_ppdata` that we can 
+use for analysis. We also impute zeroes for the `NA` entries in the `N` field, 
+which will make our analysis easier.
+
+```{r}
 # Separate Scottish data
 main_ppdata <- all_ppdata[scottish == FALSE]
+main_ppdata$N[is.na(main_ppdata$N)] <- 0L
 scot_ppdata <- all_ppdata[scottish == TRUE]
+```
 
-# What proportion of transactions occur in areas with low/no data?
-data_quality_summ <- main_ppdata[
+## Analysis
+
+### Data Quantity
+
+An important question to answer is: for which outcode-year-type groups do we 
+have sufficient data to be able to draw reliable inferences?
+
+We can visualise this to begin with.
+
+```{r, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(main_ppdata, aes(N)) +
+    geom_histogram(binwidth = 30) +
+    theme_minimal()
+```
+
+This doesn't look promising, but there is a long tail here that may not be 
+captured clearly in the histogram.
+
+```{r}
+data_quality_summary <- main_ppdata[
     , 
     .(N = .N,
       N10_more = sum(N >= 10, na.rm = T),
       N05_more = sum(N >= 5, na.rm = T),
-      no_data = sum(is.na(N)))
-]
+      no_data = sum(N == 0, na.rm = T))
+    ]
+data_quality_summary
+# Create a table for display showing counts of groups with low data and no 
+# data
 main_ppdata[, 
             .N, 
             keyby = .(low_data = (N < 10 & !is.na(N)),
-                      no_data = is.na(N))
+                      no_data = (N == 0))
             ]
+```
 
+So of the `r nrow(main_ppdata)` groups in our dataset, 
+`r nrow(main_ppdata[N < 10])` have 1-9 observations; `r sum(is.na(main_ppdata$N))` 
+have none. That means `r nrow(main_ppdata[N >= 10])` of the groups have at 
+least 10 observations, or 
+`r round(100*nrow(main_ppdata[N >= 10])/nrow(main_ppdata))`%.
 
+This is a little better, but seems to imply that the usefulness of our data will 
+be confined by less than three-quarters of the country. However this does not 
+take account of the clustering of property transactions. What proportion of 
+property transactions occur in groups with 10 or more observations?
 
-# Use first part of outcode to generate larger n groups that can be used to 
-# examine changes in price over time
+```{r}
+main_ppdata[, 
+            .(total_transactions = sum(N)), 
+            by = .(N >= 10)]
+```
 
-# full_data <- full_data %>% 
-#     mutate(area_code = str_extract(outcode, "[A-Z]{1,2}")) %>% 
-#     select(price, 
-#            date_of_transfer, 
-#            year, 
-#            area_code, 
-#            outcode, 
-#            property_type, 
-#            incode, 
-#            everything())
-# 
-# by_area_yr_typ <- full_data %>%
-#     group_by(area_code, 
-#              property_type,
-#              year) %>% 
-#     summarise(n = n(),
-#               avg_price = mean(price), 
-#               sd = sd(price), 
-#               q05 = quantile(price, .05),
-#               q10 = quantile(price, .10),
-#               q15 = quantile(price, .15), 
-#               q20 = quantile(price, .20),
-#               q25 = quantile(price, .25),
-#               q50 = quantile(price, .50),
-#               q75 = quantile(price, .75))
-# 
-# # Create an areas_yrs_grp table to check for missing data
-# outcdes_yrs_typs %>% 
-#     mutate(area_cde = str_extract(outcde, "[A-z]{1,2}")) %>% 
-#     select(area_cde, year, property_type) %>% 
-#     distinct(.) -> areas_yrs_grps
-# 
-# # Set NAs to empty string
-# areas_yrs_grps[is.na(areas_yrs_grps$area_cde), 1] <- ''
-# 
-# # Test for missing data
-# left_join(areas_yrs_grps,
-#           by_area_yr_typ,
-#           by = c('area_cde' = 'area_code',
-#                  'year' = 'year',
-#                  'property_type' = 'property_type'
-#           )) -> grp_area_ppdata
-# 
-# View(grp_area_ppdata)
+This is more promising: only 
+`r round(100*sum(main_ppdata[N < 10]$N)/sum(main_ppdata$N))`% of property 
+transactions in the tax years 2014-2017 took place in groups with fewer than 10 
+data points. We can test this with a higher threshold for 'good data' of n = 20.
 
-# # Excluding property type O = Other leaves only 11 segments with < 5 data points
-# not_other <- by_area_yr_typ[by_area_yr_typ$property_type != "O", ]
-# not_other[not_other$n_i < 5, ]
+```{r}
+main_ppdata[, 
+            .(total_transactions = sum(N)), 
+            by = .(N >= 20)]
+```
 
+`r round(100*sum(main_ppdata[N < 20]$N)/sum(main_ppdata$N))`% of transactions 
+are in groups that fall below this incrreased threshold. We can also check 
+whether this remains consistent year-on-year.
 
+```{r, include = FALSE}
+(main_ppdata[, 
+            good_data := (N >= 10)][
+                , 
+                .(total_transactions = sum(N)), 
+                by = .(year, good_data)
+            ] -> data_summary)
 
-# Add column to calculate annual % price change in each area/type combo
+```
 
-# pct <- function(x) {
-#     x/lag(x)
-# }
-# 
-# full_data %>% group_by(area_code,
-#                        property_type) %>% 
-#     mutate(pct_change = (price / lag(price)) - 1) %>% 
-#     
-# 
-# by_area_year_type <- by_area_year_type %>% 
-#     mutate_each(funs(lag), lag(avg_price))
-# 
+```{r}
+(data_totals <- main_ppdata[, 
+                            .(total_transactions = sum(N)), 
+                            by = year])
 
-# by_area_type <- full_data %>% 
-#     group_by(area_code, 
-#              property_type,
-#              year) %>% 
-#     arrange(area_code,
-#             property_type,
-#             desc(year)) %>% 
-#     summarise(n = n(),
-#               avg_price = mean(price),
-#               sd = sd(price),
-#               threshold = quantile(price, 0.3)) %>% 
-#     mutate(pct = avg_price / lag(avg_price))
-#     # mutate(pct = avg_price / lead(avg_price))
-#     
-# by_area_type    
-#     
-#     
-# rev_sorted <- full_data %>% 
-#     arrange(desc(date_of_transfer)) %>% 
-#     group_by(area_code, 
-#              property_type,
-#              year) %>% 
-#     arrange(area_code,
-#             property_type,
-#             desc(year)) %>% 
-#     summarise(n = n(),
-#               avg_price = mean(price),
-#               sd = sd(price),
-#               threshold = quantile(price, 0.3))
-# 
-# rev_sorted
+(good_data_totals <- main_ppdata[, 
+                                good_data := (N >= 20)][
+                                    , 
+                                    .(transactions = sum(N)), 
+                                    by = .(year, good_data)
+                                    ][
+                                        good_data == TRUE
+                                        ])
+setkey(good_data_totals, year)
+setkey(data_totals, year)
+
+data_totals[good_data_totals][, 
+                              .(good_data_pct = 100 * (transactions / total_transactions)), 
+                              by = year] %>% 
+    ggplot(., aes(year, good_data_pct)) +
+    geom_bar(stat = 'identity') +
+    coord_cartesian(ylim = c(90, 100)) +
+    geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
+              vjust = 3, 
+              colour = 'white', 
+              size = 3.5)
+    
+```
