@@ -20,7 +20,7 @@ create_full_data <- function() {
     }
     
     # Set years parameter to allow for easily changing the scope of the data we get
-    years <- seq(2015, 2016)
+    years <- seq(2014, 2017)
     
     # Create the urls and download the data
     urls <- map_chr(years, make_url)
@@ -130,11 +130,7 @@ if(!exists('by_outcde_yr_typ')) {
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
-                                           q25 = quantile(price, .25),
-                                           q20 = quantile(price, .20),
-                                           q15 = quantile(price, .15),
-                                           q10 = quantile(price, .10),
-                                           q05 = quantile(price, .05)), 
+                                           q25 = quantile(price, .25)), 
                                          
                                          keyby = .(outcde, prop_typ, year)])
 }
@@ -222,7 +218,7 @@ main_ppdata[,
                       no_data = is.na(N))
             ]
 
-write_excel_csv(main_ppdata, './data/main_ppdata.csv')
+
 
 # Use first part of outcode to generate larger n groups that can be used to 
 # examine changes in price over time
