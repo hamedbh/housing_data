@@ -1,6 +1,8 @@
 ---
 title: "Using Land Registry Data to Estimate Market Value of Property by Area"
-output: html_notebook
+output:
+  html_notebook: default
+  pdf_document: default
 ---
 
 This analysis uses the publicly available data from the Land Registry to 
@@ -270,27 +272,19 @@ We can visualise this to begin with.
 ```{r, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(ggthemes)
-library(viridis)
 library(hrbrthemes)
+extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30) +
-    theme_ipsum()
+    # theme_ipsum() +
+    ggtitle("Number of Observations in Each Group") +
+    labs(x = "N", y = "Count of Groups")
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
 captured clearly in the histogram.
 
 ```{r}
-# data_quality_summary <- main_ppdata[
-#     , 
-#     .(N = .N,
-#       N10_more = sum(N >= 10, na.rm = T),
-#       N05_more = sum(N >= 5, na.rm = T),
-#       no_data = sum(N == 0, na.rm = T))
-#     ]
-# data_quality_summary
-# Create a table for display showing counts of groups with low data and no 
-# data
 main_ppdata[, 
             .N, 
             keyby = .(low_data = (N < 10 & !is.na(N)),
@@ -327,7 +321,7 @@ main_ppdata[,
 ```
 
 `r round(100*sum(main_ppdata[N < 20]$N)/sum(main_ppdata$N))`% of transactions 
-are in groups that fall below this incrreased threshold. We can also check 
+are in groups that fall below this increased threshold. We can also check 
 whether this remains consistent year-on-year.
 
 ```{r, include = FALSE}
@@ -368,7 +362,7 @@ data_totals[good_data_totals][,
               size = 3.5) +
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions") +
-    theme_ipsum() +
+    #theme_ipsum() +
     theme(plot.title=element_text(hjust=0)) +
     theme(axis.ticks=element_blank()) + 
     theme(axis.text=element_text(size=7))
