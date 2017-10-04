@@ -269,9 +269,12 @@ We can visualise this to begin with.
 
 ```{r, message=FALSE, warning=FALSE}
 library(ggplot2)
+library(ggthemes)
+library(viridis)
+library(hrbrthemes)
 ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30) +
-    theme_minimal()
+    theme_ipsum()
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
@@ -332,7 +335,7 @@ whether this remains consistent year-on-year.
             good_data := (N >= 10)][
                 , 
                 .(total_transactions = sum(N)), 
-                by = .(year, good_data)
+                by = .(tax_year, good_data)
             ] -> data_summary)
 
 ```
@@ -362,6 +365,12 @@ data_totals[good_data_totals][,
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
               vjust = 3, 
               colour = 'white', 
-              size = 3.5)
+              size = 3.5) +
+    ggtitle("% of Property Transactions In Groups With Good Data") +
+    labs(x = "Tax Year", y = "% of Transactions") +
+    theme_ipsum() +
+    theme(plot.title=element_text(hjust=0)) +
+    theme(axis.ticks=element_blank()) + 
+    theme(axis.text=element_text(size=7))
     
 ```
