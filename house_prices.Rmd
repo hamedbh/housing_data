@@ -83,44 +83,24 @@ create_full_data <- function() {
     
     # Clean up the data: change certain columns to factors, set names for columns, 
     # and reorder them.
-    full_data <- full_data[
+    full_data[
         , 
         prop_typ := as.factor(prop_typ)
         ][
-        , 
-        old_new := as.factor(old_new)
+            , 
+            c("outcde", "incde") := tstrsplit(postcde, " ", fixed = TRUE)
         ][
-            ,
-            duration := as.factor(duration)
+            , 
+            date_of_transfer := as_date(date_of_transfer)
+        ][
+            , 
+            year := year(date_of_transfer)
+        ][
+            , 
+            tax_year := ifelse(month(date_of_transfer) >= 4 & day(date_of_transfer) >= 6, 
+                               year + 1,
+                               year)
         ]
-    
-    full_data %>%
-        separate(postcde, 
-                 into = c("outcde", "incde"), 
-                 sep = "\\ ",
-                 extra = "merge",
-                 fill = "right") %>% 
-        select(price, date_of_transfer, 
-               outcde, 
-               incde,
-               prop_typ, 
-               everything()) -> full_data
-    
-    # Clean and standardise the dates, add column for year
-    full_data <- full_data[, 
-                           date_of_transfer := as_date(date_of_transfer)][
-                               , 
-                               year := year(date_of_transfer)
-                           ]
-    
-    full_data %>%
-        select(price, 
-               date_of_transfer, 
-               year, 
-               outcde, 
-               incde, 
-               prop_typ, 
-               everything()) -> full_data
     
     # Write out full_data to rds to save reprocessing
     setwd('..')
@@ -155,13 +135,14 @@ if(!exists('by_outcde_yr_typ')) {
     ifelse(file.exists('/data/by_outcde_yr_typ.rds'),
            by_outcde_yr_typ <- as.data.table(readRDS('/data/by_outcde_yr_typ.rds')),
            by_outcde_yr_typ <- full_data[, 
-                                         
                                          .(.N, 
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
                                            q25 = quantile(price, .25)),
-                                         keyby = .(outcde, prop_typ, year)])
+                                         keyby = .(outcde, prop_typ, tax_year)][
+                                             tax_year %in% 2015:2017
+                                         ])
 }
 ```
 
@@ -235,7 +216,7 @@ outcdes <- rbindlist(list(list(''),
 
 # Prepare all_outcdes for binding with year and type data
 outcdes_yrs_typs <- CJ(outcde = outcdes$outcde, 
-                       year = 2014:2017,
+                       tax_year = 2014:2017,
                        prop_typ = c('D', 'F', 'O', 'S', 'T'))
 
 ```
@@ -256,8 +237,8 @@ scot_outcde_regx <- paste0('^',
                            scot_area_cdes,
                            '[0-9]{1,2}',
                            collapse = '|')
-setkey(outcdes_yrs_typs, outcde, prop_typ, year)
-setkey(by_outcde_yr_typ, outcde, prop_typ, year)
+setkey(outcdes_yrs_typs, outcde, prop_typ, tax_year)
+setkey(by_outcde_yr_typ, outcde, prop_typ, tax_year)
 all_ppdata <- merge(outcdes_yrs_typs, by_outcde_yr_typ, all.x = T)[
     ,
     scottish := (grepl(scot_outcde_regx, outcde))
@@ -359,23 +340,23 @@ whether this remains consistent year-on-year.
 ```{r}
 (data_totals <- main_ppdata[, 
                             .(total_transactions = sum(N)), 
-                            by = year])
+                            by = tax_year])
 
 (good_data_totals <- main_ppdata[, 
                                 good_data := (N >= 20)][
                                     , 
                                     .(transactions = sum(N)), 
-                                    by = .(year, good_data)
+                                    by = .(tax_year, good_data)
                                     ][
                                         good_data == TRUE
                                         ])
-setkey(good_data_totals, year)
-setkey(data_totals, year)
+setkey(good_data_totals, tax_year)
+setkey(data_totals, tax_year)
 
 data_totals[good_data_totals][, 
                               .(good_data_pct = 100 * (transactions / total_transactions)), 
-                              by = year] %>% 
-    ggplot(., aes(year, good_data_pct)) +
+                              by = tax_year] %>% 
+    ggplot(., aes(tax_year, good_data_pct)) +
     geom_bar(stat = 'identity') +
     coord_cartesian(ylim = c(90, 100)) +
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
