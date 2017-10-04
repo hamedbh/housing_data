@@ -41,10 +41,10 @@ create_full_data <- function() {
     
     # Create the urls and download the data
     urls <- map_chr(years, make_url)
-    if(!dir.exists("/data/")) {
-        dir.create("/data/")
+    if(!dir.exists("data/")) {
+        dir.create("data/")
     }
-    setwd("/data")
+    setwd("data")
     walk(urls, function(x) {
         if(!file.exists(basename(x))) {
             download.file(x, basename(x), method = "wget")
@@ -136,8 +136,8 @@ creation of the data objects, as they are rather large.
 
 ```{r, results = 'hide'}
 if(!exists('full_data')) {
-    ifelse(file.exists('./data/full_data.rds'),
-           invisible(full_data <- as.data.table(readRDS('./data/full_data.rds'))),
+    ifelse(file.exists('data/full_data.rds'),
+           invisible(full_data <- as.data.table(readRDS('data/full_data.rds'))),
            create_full_data())
 }
 ```
@@ -169,8 +169,8 @@ Save the summarised table to file to speed up the process when re-running.
 
 ```{r}
 # Write out the data.table to rds
-if(!file.exists('~/housing_data/data/by_outcde_yr_typ.rds')) {
-    saveRDS(by_outcde_yr_typ, '~/housing_data/data/by_outcde_yr_typ.rds')
+if(!file.exists('data/by_outcde_yr_typ.rds')) {
+    saveRDS(by_outcde_yr_typ, 'data/by_outcde_yr_typ.rds')
 }
 ```
 
@@ -297,14 +297,14 @@ This doesn't look promising, but there is a long tail here that may not be
 captured clearly in the histogram.
 
 ```{r}
-data_quality_summary <- main_ppdata[
-    , 
-    .(N = .N,
-      N10_more = sum(N >= 10, na.rm = T),
-      N05_more = sum(N >= 5, na.rm = T),
-      no_data = sum(N == 0, na.rm = T))
-    ]
-data_quality_summary
+# data_quality_summary <- main_ppdata[
+#     , 
+#     .(N = .N,
+#       N10_more = sum(N >= 10, na.rm = T),
+#       N05_more = sum(N >= 5, na.rm = T),
+#       no_data = sum(N == 0, na.rm = T))
+#     ]
+# data_quality_summary
 # Create a table for display showing counts of groups with low data and no 
 # data
 main_ppdata[, 
