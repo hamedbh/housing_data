@@ -402,7 +402,32 @@ by_outcde_yr_typ[,
     ggtitle("Total Value of Property Transactions By Year") +
     labs(x = "Tax Year", y = "") +
     theme_ipsum_rc() +
-    scale_y_continuous(breaks = NULL)
+    scale_y_continuous(breaks = c(0, 3e11), labels = c("", ""))
     
+```
+
+This indicates that prices fluctuate from year to year, which seems intuitive, 
+but the distributions themselves require examination.
+
+A lognormal distribution seems a reasonable prior for the distribution of house 
+prices. We can attempt to fit house prices for each year to a lognormal and 
+consider whether the shape of the distribution is consistent.
+
+```{r}
+library(fitdistrplus)
+full_data[, 
+          .(price, tax_year)] -> prices_allyears
+
+setkey(prices_allyears, tax_year)
+
+prices_2015 <- prices_allyears[tax_year == 2015]$price
+prices_2016 <- prices_allyears[tax_year == 2016]$price
+prices_2017 <- prices_allyears[tax_year == 2017]$price
+
+fit.lnorm <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
+    fitdist(x, "lnorm")
+})
+fit.lnorm_2015 <- fit.lnorm[[1]]
+plot(fit.lnorm_2015)
 ```
 
