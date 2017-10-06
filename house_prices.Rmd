@@ -134,14 +134,15 @@ entries for each combination of year, property type, and postcode area/outcode
 # Group the data by outcode, year, and property type, then summarise with a few 
 # key stats
 if(!exists('by_outcde_yr_typ')) {
-    ifelse(file.exists('/data/by_outcde_yr_typ.rds'),
-           by_outcde_yr_typ <- as.data.table(readRDS('/data/by_outcde_yr_typ.rds')),
+    ifelse(file.exists('data/by_outcde_yr_typ.rds'),
+           by_outcde_yr_typ <- as.data.table(readRDS('data/by_outcde_yr_typ.rds')),
            by_outcde_yr_typ <- full_data[, 
                                          .(.N, 
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
-                                           q25 = quantile(price, .25)),
+                                           q25 = quantile(price, .25), 
+                                           q75 = quantile(price, .75)),
                                          keyby = .(outcde, prop_typ, tax_year)][
                                              tax_year %in% 2015:2017
                                          ])
@@ -276,7 +277,7 @@ library(hrbrthemes)
 extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30) +
-    # theme_ipsum() +
+    theme_ipsum_rc() +
     ggtitle("Number of Observations in Each Group") +
     labs(x = "N", y = "Count of Groups")
 ```
@@ -359,12 +360,49 @@ data_totals[good_data_totals][,
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
               vjust = 3, 
               colour = 'white', 
-              size = 3.5) +
+              size = 3.5, 
+              family = "Roboto Condensed") +
     ggtitle("% of Property Transactions In Groups With Good Data") +
-    labs(x = "Tax Year", y = "% of Transactions") +
-    #theme_ipsum() +
-    theme(plot.title=element_text(hjust=0)) +
-    theme(axis.ticks=element_blank()) + 
-    theme(axis.text=element_text(size=7))
+    labs(x = "Tax Year", y = "% of Transactions", 
+         caption = "NB. Good data defined as those groups with 20 or more data points.") +
+    theme_ipsum_rc()
+
+```
+
+This implies that the proportions are fairly consistent over time. 
+
+### Trends over time
+
+We need to consider whether the within-year trends seem to be consistent 
+between years. Remember that we are considering three levels in our grouping:
+
+- tax year;
+- property type;
+- area (i.e. postal outcode).
+
+We can examine each of these individually, and then combine them and consider 
+overall effects.
+
+#### Year On Year Trends
+
+```{r}
+library(scales)
+by_outcde_yr_typ[, 
+                 .(total_value = sum(N * avg_price)), 
+                 by = tax_year] %>% 
+    ggplot(., aes(tax_year, total_value)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = paste0("£", 
+                                 round((total_value / 1e9), 1), 
+                                 "Bn")), 
+              vjust = 2, 
+              colour = 'white', 
+              size = 8, 
+              family = "Roboto Condensed") +
+    ggtitle("Total Value of Property Transactions By Year") +
+    labs(x = "Tax Year", y = "") +
+    theme_ipsum_rc() +
+    scale_y_continuous(breaks = NULL)
     
 ```
+
