@@ -121,6 +121,11 @@ Source: CRAN
 Version: 1.0
 Hash: 72269616f582dc675c90ecd025af2754
 
+Package: fitdistrplus
+Source: CRAN
+Version: 1.0-9
+Hash: d1e1fb479d41b9a934b8991b1f5e7ad6
+
 Package: ggplot2
 Source: CRAN
 Version: 2.2.1
