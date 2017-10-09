@@ -276,7 +276,7 @@ library(ggthemes)
 library(hrbrthemes)
 extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
-    geom_histogram(binwidth = 30) +
+    geom_histogram(binwidth = 30, fill = "#008985") +
     theme_ipsum_rc() +
     ggtitle("Number of Observations in Each Group") +
     labs(x = "N", y = "Count of Groups")
@@ -355,7 +355,7 @@ data_totals[good_data_totals][,
                               .(good_data_pct = 100 * (transactions / total_transactions)), 
                               by = tax_year] %>% 
     ggplot(., aes(tax_year, good_data_pct)) +
-    geom_bar(stat = 'identity') +
+    geom_bar(stat = 'identity', fill = "#008985") +
     coord_cartesian(ylim = c(90, 100)) +
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
               vjust = 3, 
