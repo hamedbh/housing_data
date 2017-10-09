@@ -141,7 +141,7 @@ if(!exists('by_outcde_yr_typ')) {
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
-                                           q25 = quantile(price, .25), 
+                                           q25 = quantile(price, .25),
                                            q75 = quantile(price, .75)),
                                          keyby = .(outcde, prop_typ, tax_year)][
                                              tax_year %in% 2015:2017
@@ -279,7 +279,9 @@ ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30, fill = "#008985") +
     theme_ipsum_rc() +
     ggtitle("Number of Observations in Each Group") +
-    labs(x = "N", y = "Count of Groups")
+    labs(x = "N", y = "Count of Groups") +
+    scale_y_comma() +
+    scale_x_comma()
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
@@ -325,16 +327,6 @@ main_ppdata[,
 are in groups that fall below this increased threshold. We can also check 
 whether this remains consistent year-on-year.
 
-```{r, include = FALSE}
-(main_ppdata[, 
-            good_data := (N >= 10)][
-                , 
-                .(total_transactions = sum(N)), 
-                by = .(tax_year, good_data)
-            ] -> data_summary)
-
-```
-
 ```{r}
 (data_totals <- main_ppdata[, 
                             .(total_transactions = sum(N)), 
@@ -360,7 +352,7 @@ data_totals[good_data_totals][,
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
               vjust = 3, 
               colour = 'white', 
-              size = 3.5, 
+              size = 4, 
               family = "Roboto Condensed") +
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions", 
@@ -391,7 +383,7 @@ by_outcde_yr_typ[,
                  .(total_value = sum(N * avg_price)), 
                  by = tax_year] %>% 
     ggplot(., aes(tax_year, total_value)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", fill = "#1b9cad") +
     geom_text(aes(label = paste0("£", 
                                  round((total_value / 1e9), 1), 
                                  "Bn")), 
