@@ -383,7 +383,7 @@ by_outcde_yr_typ[,
                  .(total_value = sum(N * avg_price)), 
                  by = tax_year] %>% 
     ggplot(., aes(tax_year, total_value)) +
-    geom_bar(stat = "identity", fill = "#1b9cad") +
+    geom_bar(stat = "identity", fill = "#008985") +
     geom_text(aes(label = paste0("£", 
                                  round((total_value / 1e9), 1), 
                                  "Bn")), 
@@ -421,5 +421,49 @@ fit.lnorm <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
 })
 fit.lnorm_2015 <- fit.lnorm[[1]]
 plot(fit.lnorm_2015)
+fit.lnorm_2016 <- fit.lnorm[[2]]
+plot(fit.lnorm_2016)
+fit.lnorm_2017 <- fit.lnorm[[3]]
+plot(fit.lnorm_2017)
+```
+
+```{r}
+fit.lnorm.mme <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
+    fitdist(x, "lnorm", "mme")
+})
+
+fit.lnorm.mme_2015 <- fit.lnorm.mme[[1]]
+plot(fit.lnorm.mme_2015)
+fit.lnorm.mme_2016 <- fit.lnorm.mme[[2]]
+plot(fit.lnorm.mme_2016)
+fit.lnorm.mme_2017 <- fit.lnorm.mme[[3]]
+plot(fit.lnorm.mme_2017)
+```
+
+```{r}
+fit.lnorm.mge <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
+    fitdist(x, "lnorm", "mge", gof = "CvM")
+})
+
+fit.lnorm.mge_2015 <- fit.lnorm.mge[[1]]
+plot(fit.lnorm.mge_2015)
+fit.lnorm.mge_2016 <- fit.lnorm.mge[[2]]
+plot(fit.lnorm.mge_2016)
+fit.lnorm.mge_2017 <- fit.lnorm.mge[[3]]
+plot(fit.lnorm.mge_2017)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+fit.lnorm[[1]]$estimate[[1]]
+fit.lnorm.mme[[1]]$estimate[[1]]
+fit.lnorm.mge[[1]]$estimate[[1]]
 ```
 
