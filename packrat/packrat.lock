@@ -77,8 +77,8 @@ Hash: 5a3f385f21add1e944b93b3cd9ce8b48
 
 Package: data.table
 Source: CRAN
-Version: 1.10.4
-Hash: 2c7c47ccb40d01c7b214c8eff818108d
+Version: 1.10.4-1
+Hash: 4ea088d5bf0719fb49c24e3dc10f1ce6
 
 Package: devtools
 Source: CRAN
@@ -131,6 +131,12 @@ Source: CRAN
 Version: 2.2.1
 Hash: 46e5cb78836848aa44655e577433f54b
 Requires: digest, gtable, lazyeval, plyr, reshape2, scales, tibble
+
+Package: ggridges
+Source: CRAN
+Version: 0.4.1
+Hash: 9005bf3e4cc16e9c201d77905372a411
+Requires: ggplot2, plyr, scales
 
 Package: ggthemes
 Source: CRAN
