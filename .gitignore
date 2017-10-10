@@ -32,15 +32,13 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-pp-2012.txt
-pp-2013.txt
-pp-2014.txt
-pp-2015.txt
-pp-2016.txt
-pp-2017.txt
+pp-*.txt
 
 packrat/lib*/
 .Rproj.user
 
 # Large rds files
-data/full_data.rds
+data/*.rds
+
+# DS Store files from Mac
+*.DS_Store*
