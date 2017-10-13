@@ -360,7 +360,7 @@ overall effects.
 
 #### Year On Year Trends
 
-```{r}
+```{r, message = FALSE}
 library(scales)
 library(viridis)
 melt(full_data[, 
@@ -436,6 +436,9 @@ write_csv(output_table, "outputs/output_table.csv")
 write_rds(output_table, "data/output_table.rds")
 ```
 
+## Test distributions
+
+Work with fitting distributions to the data across each of the property types.
 
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
