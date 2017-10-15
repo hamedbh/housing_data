@@ -399,39 +399,27 @@ large difference between these may be a useful risk indicator.
 ## Creating the Output Product
 
 ```{r}
-output_table <- main_ppdata[, 
-                            `:=` (diff_01 = avg_price / lag(avg_price, 01L), 
-                                  diff_02 = avg_price / lag(avg_price, 02L), 
-                                  diff_03 = avg_price / lag(avg_price, 03L), 
-                                  diff_04 = avg_price / lag(avg_price, 04L), 
-                                  diff_05 = avg_price / lag(avg_price, 05L), 
-                                  diff_06 = avg_price / lag(avg_price, 06L), 
-                                  diff_07 = avg_price / lag(avg_price, 07L), 
-                                  diff_08 = avg_price / lag(avg_price, 08L), 
-                                  diff_09 = avg_price / lag(avg_price, 09L), 
-                                  diff_10 = avg_price / lag(avg_price, 10L), 
-                                  diff_11 = avg_price / lag(avg_price, 11L), 
-                                  diff_12 = avg_price / lag(avg_price, 12L), 
-                                  diff_13 = avg_price / lag(avg_price, 13L), 
-                                  diff_14 = avg_price / lag(avg_price, 14L), 
-                                  diff_15 = avg_price / lag(avg_price, 15L), 
-                                  diff_16 = avg_price / lag(avg_price, 16L), 
-                                  diff_17 = avg_price / lag(avg_price, 17L), 
-                                  diff_18 = avg_price / lag(avg_price, 18L), 
-                                  diff_19 = avg_price / lag(avg_price, 19L), 
-                                  diff_20 = avg_price / lag(avg_price, 20L), 
-                                  diff_21 = avg_price / lag(avg_price, 21L), 
-                                  diff_22 = avg_price / lag(avg_price, 22L), 
-                                  diff_23 = avg_price / lag(avg_price, 23L)), 
-                            by = .(outcde, prop_typ)]
-
+output_table <- copy(main_ppdata)
+output_table[, 
+             sd_mean_ratio := sd / avg_price][
+                 , 
+                 paste0("diff_", 
+                        1:23) := lapply(1:23,  
+                                        function(x) {
+                                            avg_price / shift(avg_price, n = x)
+                                    }), 
+             by = .(outcde, prop_typ)
+             ][
+                 , 
+                 scottish := NULL
+             ]
 ```
 
 Create the output files.
 
 ```{r}
 write_excel_csv(output_table, "outputs/output_table_xlformat.csv")
-write_delim(output_table, "outputs/output_table_pipe.txt")
+write_delim(output_table, "outputs/output_table_pipe.txt", delim = "|")
 write_csv(output_table, "outputs/output_table.csv")
 write_rds(output_table, "data/output_table.rds")
 ```
@@ -439,6 +427,23 @@ write_rds(output_table, "data/output_table.rds")
 ## Test distributions
 
 Work with fitting distributions to the data across each of the property types.
+
+```{r}
+by_yr_typ <- full_data[,
+                       .(price), 
+                       keyby = .(prop_typ, tax_year)]
+```
+
+```{r}
+library(fitdistrplus)
+all_terraced <- by_yr_typ[prop_typ == "T"]
+terraced.lnorm <- map(1995:2008, function(x) {
+    fitdist(all_terraced[tax_year == x]$price, "lnorm")
+})
+
+
+```
+
 
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
