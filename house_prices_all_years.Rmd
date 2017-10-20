@@ -1,18 +1,40 @@
 ---
 title: "Using Land Registry Data to Estimate Market Value of Property by Area"
+author: "Hamed Bastan-Hagh"
 output:
-  html_notebook: default
-  pdf_document: default
+  html_notebook: 
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
 ---
 
-This analysis uses the publicly available data from the Land Registry to 
-estimate a reasonable market value for each property type in each area. The 
-conclusion is that the data are sufficient to set fairly broad, but useful, 
-boundaries for transactions at 'fair market value' in most areas.
+# Overview
 
-## Data Preparation
+This analysis uses the publicly available [price paid data][3] from the Land 
+Registry to determine whether it is possible to estimate a reasonable market 
+value for each property type in each area. The conclusion is that the data are 
+sufficient to set fairly broad, but useful, boundaries for transactions at 
+'fair market value' in most areas. A more useful approach may be to consider 
+changes in property value, and to use comparisons of actual to expected price 
+changes as a risk marker. Each of these approaches is summarised below.
 
-To begin with we load the libraries required for the analysis.
+Further work will be done to analyse the distribution of house prices, and 
+whether this allows for useful application of the expected values and variance 
+in any profiling applications.
+
+NB. The next section deals with acquiring and preparing the data for analysis: 
+the analysis with respect to average values and price changes are in sections 
+3 and 4.
+
+# Pre-Analysis
+
+## Data Loading and Preparation
+
+To begin with we load the libraries required.
 
 ```{r, message=FALSE, warning=FALSE}
 library(tidyr)
@@ -26,7 +48,10 @@ library(stringr)
 
 Now we create a function that will check whether the price paid data are present 
 locally. If so it will read that into memory as `full_data`. If not it will 
-download the price paid data and create the `full_data` object.
+download the price paid data and create the `full_data` object. The contents of 
+this function show how the data will be structured (e.g. variable names and 
+types).
+
 ```{r}
 create_full_data_all_years <- function() {
     make_url <- function(year) {
@@ -74,7 +99,6 @@ create_full_data_all_years <- function() {
     full_data <- rbindlist(datalist)
     rm(datalist)
     setwd("..")
-    # datalist <- lapply(list.files(pattern = "pp-\\d{4}\\.txt"), fread, sep = ",")
     
     full_data[
         , 
@@ -95,7 +119,7 @@ create_full_data_all_years <- function() {
                                            year)
                         ]
     
-    saveRDS(full_data, './data/full_data_all_years.rds')
+    write_rds(full_data, './data/full_data_all_years.rds')
 }
 ```
 
@@ -108,7 +132,7 @@ creation of the data objects, as they are rather large.
 ```{r, results = 'hide'}
 if(!exists('full_data')) {
     ifelse(file.exists('data/full_data_all_years.rds'),
-           invisible(full_data <- as.data.table(readRDS('data/full_data_all_years.rds'))),
+           invisible(full_data <- read_rds('data/full_data_all_years.rds')),
            create_full_data())
 }
 ```
@@ -124,15 +148,15 @@ entries for each combination of year, property type, and postcode area/outcode
 # key stats
 if(!exists('by_outcde_yr_typ')) {
     ifelse(file.exists('data/by_outcde_yr_typ_all_yrs.rds'),
-           by_outcde_yr_typ <- as.data.table(readRDS('data/by_outcde_yr_typ_all_yrs.rds')),
-           by_outcde_yr_typ <- full_data_all_years[, 
-                                                   .(.N, 
-                                                     avg_price = mean(price),
-                                                     median = quantile(price, .50),
-                                                     sd = sd(price),
-                                                     q25 = quantile(price, .25),
-                                                     q75 = quantile(price, .75)),
-                                                   keyby = .(outcde, prop_typ, tax_year)])
+           by_outcde_yr_typ <- read_rds('data/by_outcde_yr_typ_all_yrs.rds'),
+           by_outcde_yr_typ <- full_data[, 
+                                         .(.N, 
+                                           avg_price = mean(price),
+                                           median = quantile(price, .50),
+                                           sd = sd(price),
+                                           q25 = quantile(price, .25),
+                                           q75 = quantile(price, .75)),
+                                         keyby = .(outcde, prop_typ, tax_year)])
 }
 ```
 
@@ -145,17 +169,55 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
 }
 ```
 
-Run a quick check for data quality.
+
+# Property Price By Type and Location
+
+Our first aim is to determine whether we have sufficient data to give a 
+meaningful expected value for a given property transaction. There are at least 
+three elements to consider with this:
+
+- What categorical variables are available to us for segmenting the data?
+- Do we have sufficient observations in each of those segments for reliable 
+inference?
+- Does the dispersion of the data points in each segment allow us to set 
+reasonable error bounds for the expected value?
+
+Each will be addressed in turn.
+
+## Categorical Variables
+
+Let's consider the variables in the full price paid data.
+
+```{r}
+str(full_data)
+```
+
+For this analysis we will use three variables to segment the data:
+
+- **postcode area** (or outcode);
+- **property type**: Detached, Flat, Semi-Detached, Terraced, Other;
+- **tax_year**.
+
+It might be possible to do a more detailed analysis of location using geo data, 
+based on the full postcode, but for the purposes of this work we will cluster 
+properties based on their postcode area and consider it as a discrete variable.
+
+## Data Completeness
+
+We have our three categories for the analysis, so we start by checking what 
+proportion of the tax year-property type-outcode groups have a reasonable 
+number of observations, say 10.
 
 ```{r}
 # Check how many groups have at least 10 data points
-paste0(round((100 * nrow(by_outcde_yr_typ[N > 20]) / nrow(by_outcde_yr_typ))),
+paste0(round((100 * nrow(by_outcde_yr_typ[N > 10]) / nrow(by_outcde_yr_typ))),
        "% of outcode, year, property type groups have at least 10 data points.")
 ```
 
-The next step is to compare our list to the reference list of postcode areas, 
-to ensure that we have entries for every possible combination (since any groups 
-with no transactions will be missing from our list).
+However we cannot be sure we have every possible combination of 
+tax year-property type-outcode is present in our data. So we compare our list 
+to the reference list of postcode areas from the Ordnance Survey, to ensure 
+that we have entries for every possible combination.
 
 In this analysis the postcode lists have already been downloaded from the 
 Ordnance Survey in `.csv` format, and stored in a directory called `OS_data`. 
@@ -177,28 +239,13 @@ pcdes <- rbindlist(lapply(fils,
                                                          '^[A-z]{1,2}\\d{1,2}[A-z]?'),
                                     incde = str_extract(V1, 
                                                         '\\d[A-z]{2}$'))]
-```
 
-Now test that the postcodes all fit the required format.
-
-```{r}
-# Test whether all pcdes have required format
-min(str_detect(pcdes$pcde, "[A-z]{1,2}\\d{1,2}[A-z]? \\d[A-z]{2}")) == 1
-```
-
-```{r}
-# Test whether all outcdes have required format
-min(str_detect(pcdes$outcde, "[A-z]{1,2}\\d{1,2}[A-z]?")) == 1
-```
-
-We only need the outcodes, so we can reduce the size of the object dramatically. 
-Importantly we add a row for a blank string, to match to those sales in the 
-price paid data with no geographical location.
-
-Then we cross join that table with all possible years and property types.
-
-
-```{r}
+# We only need the outcodes, so we can reduce the size of the object 
+# dramatically. 
+# Importantly we add a row for a blank string, to match to those sales in the 
+# price paid data with no geographical location.
+# 
+# Then we cross join that table with all possible years and property types.
 # Drop cols and duplicates from pcdes to save memory
 outcdes <- rbindlist(list(list(''), 
                           unique(pcdes[, .(outcde)])))
@@ -248,13 +295,8 @@ main_ppdata$N[is.na(main_ppdata$N)] <- 0L
 scot_ppdata <- all_ppdata[scottish == TRUE]
 ```
 
-
-## Analysis
-
-### Data Quantity
-
-An important question to answer is: for which outcode-year-type groups do we 
-have sufficient data to be able to draw reliable inferences?
+For which outcode-year-type groups do we have sufficient data for reliable 
+inferences?
 
 We can visualise this to begin with.
 
@@ -264,12 +306,13 @@ library(ggthemes)
 library(hrbrthemes)
 extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
-    geom_histogram(binwidth = 30, fill = "#008985") +
+    geom_histogram(binwidth = 30, fill = "#1b9cad") +
     theme_ipsum_rc() +
     ggtitle("Number of Observations in Each Group") +
-    labs(x = "N", y = "Count of Groups") +
+    labs(x = "N", y = "Count of Groups", 
+         caption = "'Group' is each combination of tax year-property type-outcode") +
     scale_y_comma() +
-    scale_x_comma()
+    scale_x_comma(breaks = seq(500, 2500, by = 500))
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
@@ -315,18 +358,18 @@ are in groups that fall below this increased threshold. We can also check
 whether this remains consistent year-on-year.
 
 ```{r}
-(data_totals <- main_ppdata[, 
-                            .(total_transactions = sum(N)), 
-                            by = tax_year])
+data_totals <- main_ppdata[, 
+                           .(total_transactions = sum(N)), 
+                            by = tax_year]
 
-(good_data_totals <- main_ppdata[, 
+good_data_totals <- main_ppdata[, 
                                 good_data := (N >= 20)][
                                     , 
                                     .(transactions = sum(N)), 
                                     by = .(tax_year, good_data)
                                     ][
                                         good_data == TRUE
-                                        ])
+                                        ]
 setkey(good_data_totals, tax_year)
 setkey(data_totals, tax_year)
 
@@ -334,7 +377,7 @@ data_totals[good_data_totals][,
                               .(good_data_pct = 100 * (transactions / total_transactions)), 
                               by = tax_year] %>% 
     ggplot(., aes(tax_year, good_data_pct)) +
-    geom_bar(stat = 'identity', fill = "#008985") +
+    geom_bar(stat = 'identity', fill = "#1b9cad") +
     coord_cartesian(ylim = c(50, 100)) +
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions", 
@@ -344,7 +387,33 @@ data_totals[good_data_totals][,
 ```
 
 This implies that the proportions are fairly consistent over time, and are above 
-`r round(min(data_totals[good_data_totals][, .(good_data_pct = 100 * (transactions / total_transactions)), by = tax_year]$good_data_pct))`% in all years with all but two years above `r round(data_totals[good_data_totals][, .(good_data_pct = 100 * (transactions / total_transactions)), by = tax_year][order(good_data_pct)]$good_data_pct[[3]])`%.
+`r round(min(data_totals[good_data_totals][, .(good_data_pct = 100 * (transactions / total_transactions)), by = tax_year]$good_data_pct))`% in all years with all but two years above `r round(data_totals[good_data_totals][, .(good_data_pct = 100 * (transactions / total_transactions)), by = tax_year][order(good_data_pct)]$good_data_pct[[3]])`%. 
+
+NB. The two years with much lower totals are those for which we have incomplete 
+data, because the Land Registry source data is based on calendar years. This 
+further strengthens our confidence in the data quality.
+
+## Dispersion of Price Paid Data
+
+Given that we have reasonable quality of data, we can now consider whether the 
+data points themselves are useful. The starting point for this is to consider a 
+specific example: what are the prices for terraced houses in West 
+Kensington (W14) in the 2017 tax year?
+
+```{r}
+by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14", 
+                 .(avg_price, median, sd, q25, q75)]
+```
+
+The standard deviation of 
+`r format(by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14"]$sd, big.mark = ",")` 
+is significantly more than the mean price of 
+`r format(by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14"]$avg_price, big.mark = ",")`. 
+In total there are `r format(by_outcde_yr_typ[sd > avg_price, .N], big.mark = ",")` 
+of `r format(nrow(by_outcde_yr_typ), big.mark = ",")` groups where the standard 
+deviation is greater than the mean. And there are 
+`r format(by_outcde_yr_typ[sd > (avg_price * 0.75), .N], big.mark = ",")` 
+
 
 ### Trends over time
 
@@ -361,8 +430,6 @@ overall effects.
 #### Year On Year Trends
 
 ```{r, message = FALSE}
-library(scales)
-library(viridis)
 melt(full_data[, 
           .("Median Price" = quantile(price, .5), 
             "Mean Price" = round(mean(price, na.rm = TRUE))), 
@@ -376,11 +443,11 @@ melt(full_data[,
     theme(legend.title = element_blank()) +
     ggtitle("Property Price Trends 1995-2017") +
     labs(x = "Tax Year", y = "Value in £") +
-    scale_colour_manual(values = c("#008985", "#0000a0"))
+    scale_colour_manual(values = c("#1b9cad", "#0000a0"))
 
 ```
 Property prices are broadly increasing over time, with mean and median prices 
-diverging. This indicates that the data is increasingly right-skewed, which 
+diverging. This indicates that the data are increasingly right-skewed, which 
 tallies with [anecdotal evidence][1] about prices of property in 
 London over recent years. (Although [recent articles][2] suggest that house 
 prices in London are remaining static or shrinking in some areas, this is not 
@@ -418,32 +485,176 @@ output_table[,
 Create the output files.
 
 ```{r}
-write_excel_csv(output_table, "outputs/output_table_xlformat.csv")
-write_delim(output_table, "outputs/output_table_pipe.txt", delim = "|")
-write_csv(output_table, "outputs/output_table.csv")
-write_rds(output_table, "data/output_table.rds")
+if(!file.exists("outputs/output_table_xlformat.csv")) {
+    write_excel_csv(output_table, "outputs/output_table_xlformat.csv")
+}
+if(!file.exists("outputs/output_table_pipe.txt")) {
+    write_delim(output_table, "outputs/output_table_pipe.txt", delim = "|")
+}
+if(!file.exists("outputs/output_table.csv")) {
+    write_csv(output_table, "outputs/output_table.csv")
+}
+if(!file.exists("data/output_table.rds")) {
+    write_rds(output_table, "data/output_table.rds")
+}
 ```
 
 ## Test distributions
 
-Work with fitting distributions to the data across each of the property types.
+Work with fitting distributions to the data across each of the property types. 
+We can start by visualising the property prices for flats across 2015-2017, the 
+three most recent full years in our sample.
 
 ```{r}
 by_yr_typ <- full_data[,
                        .(price), 
                        keyby = .(prop_typ, tax_year)]
+all_flats <- by_yr_typ[prop_typ == "F"]
+```
+
+
+```{r}
+all_flats[tax_year %in% 2015:2017] %>% 
+    ggplot(aes(price)) +
+    geom_density() +
+    # geom_histogram(binwidth = 25000, fill = "#1b9cad") +
+    theme_ipsum_rc() +
+    ggtitle("Distribution of Flat Prices 2014-2017") +
+    labs(x = "Price", y = "density") +
+    scale_x_continuous(breaks = c(0, 4e7)) +
+    facet_wrap(~tax_year)
+```
+As we would expect the data have a dramatic right-skew. We may get a more 
+meaningful visualisation if we examine only flats with lower values.
+
+```{r}
+all_flats[tax_year %in% 2015:2017 & price < 1e6] %>% 
+    ggplot(., aes(price)) +
+    geom_density(colour = "#1b9cad") +
+    theme_ipsum_rc() +
+    ggtitle("Distribution of Flat Prices 2014-2017") +
+    labs(x = "price", y = "density") +
+    scale_x_comma(breaks = c(0, 5e5)) +
+    facet_wrap(~tax_year)
+```
+
+Even among flats under £1,000,000 we see a strong right-skew. As such it's 
+unlikely that we will be able to use even a skew normal distribution, and 
+will need to work with distributions with heavier tails. We will try:
+
+- Log-Normal
+- Pareto
+- Weibull
+- Log-Cauchy
+
+```{r, warning=FALSE}
+library(fitdistrplus)
+flats_summary <- all_flats[tax_year %in% 1996:2017, 
+                           .(annual_avg = mean(price), 
+                             annual_sd = sd(price), 
+                             annual_var = var(price)), 
+                           by = tax_year]
+
+flats_start_vals <- list(year = 1996:2017,
+                         avg = flats_summary$annual_avg,
+                         sd = flats_summary$annual_sd)
 ```
 
 ```{r}
-library(fitdistrplus)
-all_terraced <- by_yr_typ[prop_typ == "T"]
-terraced.lnorm <- map(1995:2008, function(x) {
-    fitdist(all_terraced[tax_year == x]$price, "lnorm")
+# fitdist(all_flats[tax_year == flats_start_vals[[c(1, 1)]]]$price, 
+#         distr = "lnorm", 
+#         method = "mle", 
+#         start = list(log(flats_start_vals[[c(2, 1)]]), 
+#                      log(flats_start_vals[[c(3, 1)]])))
+flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
+    fitdist(all_flats[tax_year == yr]$price, 
+            distr = "lnorm", 
+            method = mle)
 })
-
-
+# flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
+#     fitdist(all_flats[tax_year == yr]$price, 
+#             distr = "lnorm", 
+#             method = "mle", 
+#             start = list(meanlog = log(avg), 
+#                          sdlog = log(stdev)))
+# })
+#     
+#     pmap(1996:2017, function(x) {
+#     fitdist(all_flats[tax_year == x]$price, "lnorm")
+# })
 ```
 
 
+```{r}
+print("Log likelihoods for Log-Normal distribution on prices of flats.")
+for (i in seq_len(length(flats.lnorm))) {
+    print(paste0("Log likelihood in tax year ", 
+                 i + 1995, 
+                 " is ", 
+                 flats.lnorm[[i]]$loglik))
+}
+```
+```{r, warning=FALSE}
+library(fitdistrplus)
+flats.lnorm <- map(1996:2017, function(x) {
+    fitdist(all_flats[tax_year == x]$price, "lnorm")
+})
+```
+
+
+```{r}
+print("Log likelihoods for Log-Normal distribution on prices of flats.")
+for (i in seq_len(length(flats.lnorm))) {
+    print(paste0("Log likelihood in tax year ", 
+                 i + 1995, 
+                 " is ", 
+                 flats.lnorm[[i]]$loglik))
+}
+```
+The results for the normal distribution seem poor, which tallies with our prior 
+that the property values will be right-skewed. Let's compare those results with 
+distributions with heavier tails, starting with the lognormal.
+
+```{r, warning = FALSE}
+library(rmutil)
+flats.levy <- map(1996:2017, function(x) {
+    fitdist(data = all_flats[tax_year == x]$price, 
+            distr = "levy", 
+            start = list(m = 0, s = 10))
+})
+```
+
+```{r}
+for (i in seq_len(length(terraced.lnorm))) {
+    print(paste0("Log likelihood of lognormal in tax year ", 
+                 i + 1995, 
+                 " is ", 
+                 terraced.norm[[i]]$loglik))
+}
+```
+
+```{r, warning = FALSE}
+flats.pareto <- map(1996:2017, function(x) {
+    fitdist(data = all_flats[tax_year == x]$price, 
+            distr = "pareto",
+            method = "mge",
+            gof = "CvM",
+            start = list(m = 300000, s = 1e5))
+})
+
+# fitdistr(all_flats[tax_year == 1996]$price, 
+#          dpareto, 
+         # start = list(m = 25e4, s = 1e5))
+```
+
+```{r}
+for (i in seq_len(length(terraced.lnorm))) {
+    print(paste0("Log likelihood of lognormal in tax year ", 
+                 i + 1995, 
+                 " is ", 
+                 terraced.norm[[i]]$loglik))
+}
+```
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
+[3]: http://landregistry.data.gov.uk/app/ppd
