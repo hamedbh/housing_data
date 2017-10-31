@@ -7,6 +7,7 @@ output:
     toc: yes
     toc_depth: 2
   pdf_document:
+    latex_engine: lualatex
     number_sections: yes
     toc: yes
     toc_depth: 2
@@ -538,9 +539,10 @@ all_flats[tax_year %in% 2015:2017 & price < 1e6] %>%
     facet_wrap(~tax_year)
 ```
 
-Even among flats under £1,000,000 we see a strong right-skew. As such it's 
-unlikely that we will be able to use even a skew normal distribution, and 
-will need to work with distributions with heavier tails. We will try:
+Even among flats under £1,000,000 we see a strong right-skew. As such we can 
+rule out a normal distribution as a model for our data, and it's unlikely that 
+we will be able to use even a skew normal distribution: we will need to work 
+with distributions with heavier tails. We will try:
 
 - Log-Normal
 - Pareto
@@ -555,9 +557,9 @@ flats_summary <- all_flats[tax_year %in% 1996:2017,
                              annual_var = var(price)), 
                            by = tax_year]
 
-flats_start_vals <- list(year = 1996:2017,
+flats_start_vals <- list(yr = 1996:2017,
                          avg = flats_summary$annual_avg,
-                         sd = flats_summary$annual_sd)
+                         stdev = flats_summary$annual_sd)
 ```
 
 ```{r}
@@ -569,7 +571,7 @@ flats_start_vals <- list(year = 1996:2017,
 flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
     fitdist(all_flats[tax_year == yr]$price, 
             distr = "lnorm", 
-            method = mle)
+            method = "mle")
 })
 # flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
 #     fitdist(all_flats[tax_year == yr]$price, 
