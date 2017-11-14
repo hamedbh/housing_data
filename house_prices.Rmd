@@ -141,7 +141,7 @@ if(!exists('by_outcde_yr_typ')) {
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
-                                           q25 = quantile(price, .25), 
+                                           q25 = quantile(price, .25),
                                            q75 = quantile(price, .75)),
                                          keyby = .(outcde, prop_typ, tax_year)][
                                              tax_year %in% 2015:2017
@@ -276,10 +276,12 @@ library(ggthemes)
 library(hrbrthemes)
 extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
-    geom_histogram(binwidth = 30) +
+    geom_histogram(binwidth = 30, fill = "#008985") +
     theme_ipsum_rc() +
     ggtitle("Number of Observations in Each Group") +
-    labs(x = "N", y = "Count of Groups")
+    labs(x = "N", y = "Count of Groups") +
+    scale_y_comma() +
+    scale_x_comma()
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
@@ -325,16 +327,6 @@ main_ppdata[,
 are in groups that fall below this increased threshold. We can also check 
 whether this remains consistent year-on-year.
 
-```{r, include = FALSE}
-(main_ppdata[, 
-            good_data := (N >= 10)][
-                , 
-                .(total_transactions = sum(N)), 
-                by = .(tax_year, good_data)
-            ] -> data_summary)
-
-```
-
 ```{r}
 (data_totals <- main_ppdata[, 
                             .(total_transactions = sum(N)), 
@@ -355,12 +347,12 @@ data_totals[good_data_totals][,
                               .(good_data_pct = 100 * (transactions / total_transactions)), 
                               by = tax_year] %>% 
     ggplot(., aes(tax_year, good_data_pct)) +
-    geom_bar(stat = 'identity') +
+    geom_bar(stat = 'identity', fill = "#008985") +
     coord_cartesian(ylim = c(90, 100)) +
     geom_text(aes(label = paste0(round(good_data_pct, 1), '%')), 
               vjust = 3, 
               colour = 'white', 
-              size = 3.5, 
+              size = 4, 
               family = "Roboto Condensed") +
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions", 
@@ -391,7 +383,7 @@ by_outcde_yr_typ[,
                  .(total_value = sum(N * avg_price)), 
                  by = tax_year] %>% 
     ggplot(., aes(tax_year, total_value)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", fill = "#008985") +
     geom_text(aes(label = paste0("£", 
                                  round((total_value / 1e9), 1), 
                                  "Bn")), 
@@ -429,5 +421,49 @@ fit.lnorm <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
 })
 fit.lnorm_2015 <- fit.lnorm[[1]]
 plot(fit.lnorm_2015)
+fit.lnorm_2016 <- fit.lnorm[[2]]
+plot(fit.lnorm_2016)
+fit.lnorm_2017 <- fit.lnorm[[3]]
+plot(fit.lnorm_2017)
+```
+
+```{r}
+fit.lnorm.mme <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
+    fitdist(x, "lnorm", "mme")
+})
+
+fit.lnorm.mme_2015 <- fit.lnorm.mme[[1]]
+plot(fit.lnorm.mme_2015)
+fit.lnorm.mme_2016 <- fit.lnorm.mme[[2]]
+plot(fit.lnorm.mme_2016)
+fit.lnorm.mme_2017 <- fit.lnorm.mme[[3]]
+plot(fit.lnorm.mme_2017)
+```
+
+```{r}
+fit.lnorm.mge <- map(list(prices_2015, prices_2016, prices_2017), function(x) {
+    fitdist(x, "lnorm", "mge", gof = "CvM")
+})
+
+fit.lnorm.mge_2015 <- fit.lnorm.mge[[1]]
+plot(fit.lnorm.mge_2015)
+fit.lnorm.mge_2016 <- fit.lnorm.mge[[2]]
+plot(fit.lnorm.mge_2016)
+fit.lnorm.mge_2017 <- fit.lnorm.mge[[3]]
+plot(fit.lnorm.mge_2017)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+fit.lnorm[[1]]$estimate[[1]]
+fit.lnorm.mme[[1]]$estimate[[1]]
+fit.lnorm.mge[[1]]$estimate[[1]]
 ```
 
