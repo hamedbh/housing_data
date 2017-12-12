@@ -2,12 +2,12 @@
 title: "Using Land Registry Data to Estimate Market Value of Property by Area"
 author: "Hamed Bastan-Hagh"
 output:
-  html_notebook: 
+  pdf_document:
+    latex_engine: lualatex
     number_sections: yes
     toc: yes
     toc_depth: 2
-  pdf_document:
-    latex_engine: lualatex
+  html_notebook: 
     number_sections: yes
     toc: yes
     toc_depth: 2
@@ -322,11 +322,10 @@ We can visualise this to begin with.
 ```{r, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(ggthemes)
-library(hrbrthemes)
 extrafont::loadfonts()
 ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30, fill = "#1b9cad") +
-    theme_ipsum_rc() +
+    theme_minimal(base_family = "Roboto Condensed") +
     ggtitle("Number of Observations in Each Group") +
     labs(x = "N", y = "Count of Groups", 
          caption = "'Group' is each combination of tax year-property type-outcode") +
@@ -401,7 +400,7 @@ data_totals[good_data_totals][,
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions", 
          caption = "NB. Good data defined as those groups with 20 or more data points.") +
-    theme_ipsum_rc()
+    theme_minimal(base_family = "Roboto Condensed")
 
 ```
 
@@ -457,7 +456,7 @@ melt(full_data[,
      measure_vars = c("med_price", "avg_price")) %>% 
     ggplot(., aes(x = tax_year, y = value, colour = variable)) +
     geom_line() +
-    theme_ipsum_rc() +
+    theme_minimal(base_family = "Roboto Condensed") +
     scale_y_comma() +
     theme(legend.title = element_blank()) +
     ggtitle("Property Price Trends 1995-2017") +
