@@ -42,3 +42,4 @@ data/*.rds
 
 # DS Store files from Mac
 *.DS_Store*
+outputs/*
