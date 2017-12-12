@@ -115,9 +115,11 @@ create_full_data_all_years <- function() {
                     year := year(date_of_transfer)
                     ][
                         , 
-                        tax_year := ifelse(month(date_of_transfer) >= 4 & day(date_of_transfer) >= 6, 
-                                           year + 1,
-                                           year)
+                        tax_year := case_when(
+                            month(date_of_transfer) > 4 ~ year + 1,
+                            month(date_of_transfer) < 4 ~ year,
+                            day(date_of_transfer) >= 6  ~ year + 1, 
+                            TRUE                        ~ year)
                         ]
     
     write_rds(full_data, './data/full_data_all_years.rds')
@@ -155,8 +157,24 @@ if(!exists('by_outcde_yr_typ')) {
                                            avg_price = mean(price),
                                            median = quantile(price, .50),
                                            sd = sd(price),
+                                           q05 = quantile(price, .05),
+                                           q10 = quantile(price, .10),
+                                           q15 = quantile(price, .15),
+                                           q20 = quantile(price, .20),
                                            q25 = quantile(price, .25),
-                                           q75 = quantile(price, .75)),
+                                           q30 = quantile(price, .30),
+                                           q35 = quantile(price, .35),
+                                           q40 = quantile(price, .40),
+                                           q45 = quantile(price, .45),
+                                           q55 = quantile(price, .55),
+                                           q60 = quantile(price, .60),
+                                           q65 = quantile(price, .65),
+                                           q70 = quantile(price, .70),
+                                           q75 = quantile(price, .75), 
+                                           q80 = quantile(price, .80),
+                                           q85 = quantile(price, .85),
+                                           q90 = quantile(price, .90),
+                                           q95 = quantile(price, .95)),
                                          keyby = .(outcde, prop_typ, tax_year)])
 }
 ```
@@ -517,7 +535,7 @@ all_flats <- by_yr_typ[prop_typ == "F"]
 ```{r}
 all_flats[tax_year %in% 2015:2017] %>% 
     ggplot(aes(price)) +
-    geom_density() +
+    geom_density(colour = "#1b9cad") +
     # geom_histogram(binwidth = 25000, fill = "#1b9cad") +
     theme_ipsum_rc() +
     ggtitle("Distribution of Flat Prices 2014-2017") +
@@ -563,29 +581,25 @@ flats_start_vals <- list(yr = 1996:2017,
 ```
 
 ```{r}
-# fitdist(all_flats[tax_year == flats_start_vals[[c(1, 1)]]]$price, 
-#         distr = "lnorm", 
-#         method = "mle", 
-#         start = list(log(flats_start_vals[[c(2, 1)]]), 
-#                      log(flats_start_vals[[c(3, 1)]])))
 flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
     fitdist(all_flats[tax_year == yr]$price, 
             distr = "lnorm", 
             method = "mle")
 })
-# flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
-#     fitdist(all_flats[tax_year == yr]$price, 
-#             distr = "lnorm", 
-#             method = "mle", 
-#             start = list(meanlog = log(avg), 
-#                          sdlog = log(stdev)))
-# })
-#     
-#     pmap(1996:2017, function(x) {
-#     fitdist(all_flats[tax_year == x]$price, "lnorm")
-# })
 ```
 
+```{r}
+library(extraDistr)
+library(rmutil)
+flats.pareto <- pmap(flats_start_vals, function(yr, avg, stdev) {
+    fitdist(all_flats[tax_year == yr]$price, 
+            distr = "pareto", 
+            method = "mle", 
+            start = list(y = 1, 
+                         m = log(avg), 
+                         s = log(stdev)))
+})
+```
 
 ```{r}
 print("Log likelihoods for Log-Normal distribution on prices of flats.")
