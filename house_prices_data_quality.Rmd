@@ -27,10 +27,6 @@ Further work will be done to analyse the distribution of house prices, and
 whether this allows for useful application of the expected values and variance 
 in any profiling applications.
 
-NB. The next section deals with acquiring and preparing the data for analysis: 
-the analysis with respect to average values and price changes are in sections 
-3 and 4.
-
 # Pre-Analysis
 
 ## Data Loading and Preparation
@@ -130,7 +126,8 @@ The next step is to run that function, checking first that the required object
 is not already in memory.
 
 NB. These extra steps are to prevent unnecessary downloading of the data or 
-creation of the data objects, as they are rather large.
+creation of the data objects, as they are rather large. This step will take 
+some time even if the `.rds` file is saved locally.
 
 ```{r, results = 'hide'}
 if(!exists('full_data')) {
@@ -221,6 +218,9 @@ It might be possible to do a more detailed analysis of location using geo data,
 based on the full postcode, but for the purposes of this work we will cluster 
 properties based on their postcode area and consider it as a discrete variable.
 
+Segmenting by larger areas (e.g. outcodes starting with "M" or "SN") seems 
+unlikely to give useful data as there is so much variation within these.
+
 ## Data Completeness
 
 We have our three categories for the analysis, so we start by checking what 
@@ -233,13 +233,15 @@ paste0(round((100 * nrow(by_outcde_yr_typ[N > 10]) / nrow(by_outcde_yr_typ))),
        "% of outcode, year, property type groups have at least 10 data points.")
 ```
 
-However we cannot be sure we have every possible combination of 
+However we cannot be sure that every possible combination of 
 tax year-property type-outcode is present in our data. So we compare our list 
 to the reference list of postcode areas from the Ordnance Survey, to ensure 
 that we have entries for every possible combination.
 
 In this analysis the postcode lists have already been downloaded from the 
 Ordnance Survey in `.csv` format, and stored in a directory called `OS_data`. 
+These data are available from the Ordnance Survey's [Open Data][4] website for 
+free download.
 
 ```{r}
 # Combine the Ordnance Survey postcode list csv files to get full list of all 
@@ -278,7 +280,7 @@ outcdes_yrs_typs <- CJ(outcde = outcdes$outcde,
 
 We now join the outcodes to the price paid data, and add a logical column to 
 flag Scottish postcodes. Due to the separation of Scottish property taxes we 
-will remove those areas from the analysis.
+will remove those areas from the main analysis.
 
 The two `sapply()` operations at the end of this section test for missing 
 values in the combined dataset.
@@ -322,14 +324,15 @@ We can visualise this to begin with.
 ```{r, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(ggthemes)
+library(scales)
 ggplot(main_ppdata, aes(N)) +
     geom_histogram(binwidth = 30, fill = "#1b9cad") +
-    theme_minimal(base_family = "Roboto Condensed") +
+    theme_minimal() +
     ggtitle("Number of Observations in Each Group") +
     labs(x = "N", y = "Count of Groups", 
          caption = "'Group' is each combination of tax year-property type-outcode") +
-    scale_y_comma() +
-    scale_x_comma(breaks = seq(500, 2500, by = 500))
+    scale_y_continuous(label = comma)
+    scale_x_continuous(breaks = seq(500, 2500, by = 500))
 ```
 
 This doesn't look promising, but there is a long tail here that may not be 
@@ -399,7 +402,7 @@ data_totals[good_data_totals][,
     ggtitle("% of Property Transactions In Groups With Good Data") +
     labs(x = "Tax Year", y = "% of Transactions", 
          caption = "NB. Good data defined as those groups with 20 or more data points.") +
-    theme_minimal(base_family = "Roboto Condensed")
+    theme_minimal()
 
 ```
 
@@ -429,7 +432,12 @@ is significantly more than the mean price of
 In total there are `r format(by_outcde_yr_typ[sd > avg_price, .N], big.mark = ",")` 
 of `r format(nrow(by_outcde_yr_typ), big.mark = ",")` groups where the standard 
 deviation is greater than the mean. And there are 
-`r format(by_outcde_yr_typ[sd > (avg_price * 0.75), .N], big.mark = ",")` 
+`r format(by_outcde_yr_typ[sd > (avg_price * 0.5), .N], big.mark = ",")` 
+groups where the standard deviation is greater than one half of the mean. These 
+are crude measures, but they indicate that simply comparing a property 
+transaction to the average will be insufficient in many parts of the country. 
+We now consider trends over time as a means of augmenting this and determining 
+how a property price compares to others in its area.
 
 
 ### Trends over time
@@ -455,8 +463,8 @@ melt(full_data[,
      measure_vars = c("med_price", "avg_price")) %>% 
     ggplot(., aes(x = tax_year, y = value, colour = variable)) +
     geom_line() +
-    theme_minimal(base_family = "Roboto Condensed") +
-    scale_y_comma() +
+    scale_y_continuous(label = comma) +
+    theme_minimal() +
     theme(legend.title = element_blank()) +
     ggtitle("Property Price Trends 1995-2017") +
     labs(x = "Tax Year", y = "Value in £") +
@@ -481,6 +489,17 @@ this will allow us to compare the empirical and expected change in value: a
 large difference between these may be a useful risk indicator.
 
 ## Creating the Output Product
+
+The datasets created below are house prices indexes that can be used to 
+compare with new transaction data. These will be most useful where we have a 
+second data point for the same property from a previous transaction, so that we 
+can:
+
+1. compare the price directly to the averages for its group, and
+2. compare the change over time against the group average.
+
+Using both of these should give us a clearer idea of which property 
+transactions are outliers.
 
 ```{r}
 output_table <- copy(main_ppdata)
@@ -516,159 +535,7 @@ if(!file.exists("data/output_table.rds")) {
 }
 ```
 
-## Test distributions
-
-Work with fitting distributions to the data across each of the property types. 
-We can start by visualising the property prices for flats across 2015-2017, the 
-three most recent full years in our sample.
-
-```{r}
-by_yr_typ <- full_data[,
-                       .(price), 
-                       keyby = .(prop_typ, tax_year)]
-all_flats <- by_yr_typ[prop_typ == "F"]
-```
-
-
-```{r}
-all_flats[tax_year %in% 2015:2017] %>% 
-    ggplot(aes(price)) +
-    geom_density(colour = "#1b9cad") +
-    # geom_histogram(binwidth = 25000, fill = "#1b9cad") +
-    theme_ipsum_rc() +
-    ggtitle("Distribution of Flat Prices 2014-2017") +
-    labs(x = "Price", y = "density") +
-    scale_x_continuous(breaks = c(0, 4e7)) +
-    facet_wrap(~tax_year)
-```
-As we would expect the data have a dramatic right-skew. We may get a more 
-meaningful visualisation if we examine only flats with lower values.
-
-```{r}
-all_flats[tax_year %in% 2015:2017 & price < 1e6] %>% 
-    ggplot(., aes(price)) +
-    geom_density(colour = "#1b9cad") +
-    theme_ipsum_rc() +
-    ggtitle("Distribution of Flat Prices 2014-2017") +
-    labs(x = "price", y = "density") +
-    scale_x_comma(breaks = c(0, 5e5)) +
-    facet_wrap(~tax_year)
-```
-
-Even among flats under £1,000,000 we see a strong right-skew. As such we can 
-rule out a normal distribution as a model for our data, and it's unlikely that 
-we will be able to use even a skew normal distribution: we will need to work 
-with distributions with heavier tails. We will try:
-
-- Log-Normal
-- Pareto
-- Weibull
-- Log-Cauchy
-
-```{r, warning=FALSE}
-library(fitdistrplus)
-flats_summary <- all_flats[tax_year %in% 1996:2017, 
-                           .(annual_avg = mean(price), 
-                             annual_sd = sd(price), 
-                             annual_var = var(price)), 
-                           by = tax_year]
-
-flats_start_vals <- list(yr = 1996:2017,
-                         avg = flats_summary$annual_avg,
-                         stdev = flats_summary$annual_sd)
-```
-
-```{r}
-flats.lnorm <- pmap(flats_start_vals, function(yr, avg, stdev) {
-    fitdist(all_flats[tax_year == yr]$price, 
-            distr = "lnorm", 
-            method = "mle")
-})
-```
-
-```{r}
-library(extraDistr)
-library(rmutil)
-flats.pareto <- pmap(flats_start_vals, function(yr, avg, stdev) {
-    fitdist(all_flats[tax_year == yr]$price, 
-            distr = "pareto", 
-            method = "mle", 
-            start = list(y = 1, 
-                         m = log(avg), 
-                         s = log(stdev)))
-})
-```
-
-```{r}
-print("Log likelihoods for Log-Normal distribution on prices of flats.")
-for (i in seq_len(length(flats.lnorm))) {
-    print(paste0("Log likelihood in tax year ", 
-                 i + 1995, 
-                 " is ", 
-                 flats.lnorm[[i]]$loglik))
-}
-```
-```{r, warning=FALSE}
-library(fitdistrplus)
-flats.lnorm <- map(1996:2017, function(x) {
-    fitdist(all_flats[tax_year == x]$price, "lnorm")
-})
-```
-
-
-```{r}
-print("Log likelihoods for Log-Normal distribution on prices of flats.")
-for (i in seq_len(length(flats.lnorm))) {
-    print(paste0("Log likelihood in tax year ", 
-                 i + 1995, 
-                 " is ", 
-                 flats.lnorm[[i]]$loglik))
-}
-```
-The results for the normal distribution seem poor, which tallies with our prior 
-that the property values will be right-skewed. Let's compare those results with 
-distributions with heavier tails, starting with the lognormal.
-
-```{r, warning = FALSE}
-library(rmutil)
-flats.levy <- map(1996:2017, function(x) {
-    fitdist(data = all_flats[tax_year == x]$price, 
-            distr = "levy", 
-            start = list(m = 0, s = 10))
-})
-```
-
-```{r}
-for (i in seq_len(length(terraced.lnorm))) {
-    print(paste0("Log likelihood of lognormal in tax year ", 
-                 i + 1995, 
-                 " is ", 
-                 terraced.norm[[i]]$loglik))
-}
-```
-
-```{r, warning = FALSE}
-flats.pareto <- map(1996:2017, function(x) {
-    fitdist(data = all_flats[tax_year == x]$price, 
-            distr = "pareto",
-            method = "mge",
-            gof = "CvM",
-            start = list(m = 300000, s = 1e5))
-})
-
-# fitdistr(all_flats[tax_year == 1996]$price, 
-#          dpareto, 
-         # start = list(m = 25e4, s = 1e5))
-```
-
-```{r}
-for (i in seq_len(length(terraced.lnorm))) {
-    print(paste0("Log likelihood of lognormal in tax year ", 
-                 i + 1995, 
-                 " is ", 
-                 terraced.norm[[i]]$loglik))
-}
-```
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
 [3]: http://landregistry.data.gov.uk/app/ppd
+[4]: https://www.ordnancesurvey.co.uk/opendatadownload/products.html
