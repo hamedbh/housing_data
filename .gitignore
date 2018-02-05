@@ -32,7 +32,7 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-pp-*.txt
+data/pp-*.txt
 
 packrat/lib*/
 .Rproj.user
