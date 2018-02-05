@@ -2,12 +2,16 @@
 title: "Using Land Registry Data to Estimate Market Value of Property by Area"
 author: "Hamed Bastan-Hagh"
 output:
-  pdf_document:
-    latex_engine: lualatex
+  html_notebook:
     number_sections: yes
     toc: yes
     toc_depth: 2
-  html_notebook: 
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    latex_engine: lualatex
     number_sections: yes
     toc: yes
     toc_depth: 2
@@ -65,21 +69,20 @@ create_full_data_all_years <- function() {
     }
     setwd("data")
     walk(urls, function(x) {
-        if(!file.exists(basename(x))) {
-            download.file(x, basename(x), method = "curl")
+        if(!file.exists(paste0("data/", basename(x)))) {
+            download.file(x, paste0("data/", basename(x)), method = "curl")
         }
     })
     
-    make_filename <- function(year) {
-        paste("pp-",
-              year,
-              ".txt",
-              sep = "")
+    make_filepaths <- function(year) {
+        paste0("data/pp-",
+               year,
+               ".txt")
     }
     
-    filenames <- basename(urls)
+    filepaths <- make_filepaths(years)
     
-    datalist <- map(filenames, 
+    datalist <- map(filepaths, 
                     function(x) fread(x,
                                       sep = ",",
                                       header = F, 
@@ -94,9 +97,7 @@ create_full_data_all_years <- function() {
                                                     'rec_status')))
     
     full_data <- rbindlist(datalist)
-    rm(datalist)
-    setwd("..")
-    
+
     full_data[
         , 
         prop_typ := as.factor(prop_typ)
@@ -119,6 +120,8 @@ create_full_data_all_years <- function() {
                         ]
     
     write_rds(full_data, './data/full_data_all_years.rds')
+    
+    rm(datalist)
 }
 ```
 
@@ -422,17 +425,17 @@ Kensington (W14) in the 2017 tax year?
 
 ```{r}
 by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14", 
-                 .(avg_price, median, sd, q25, q75)]
+                 .(avg_price, median_price, price_stdev, q25, q75)]
 ```
 
 The standard deviation of 
-`r format(by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14"]$sd, big.mark = ",")` 
+`r format(by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14"]$price_stdev, big.mark = ",")` 
 is significantly more than the mean price of 
 `r format(by_outcde_yr_typ[prop_typ == "T" & tax_year == 2017 & outcde == "W14"]$avg_price, big.mark = ",")`. 
-In total there are `r format(by_outcde_yr_typ[sd > avg_price, .N], big.mark = ",")` 
+In total there are `r format(by_outcde_yr_typ[price_stdev > avg_price, .N], big.mark = ",")` 
 of `r format(nrow(by_outcde_yr_typ), big.mark = ",")` groups where the standard 
 deviation is greater than the mean. And there are 
-`r format(by_outcde_yr_typ[sd > (avg_price * 0.5), .N], big.mark = ",")` 
+`r format(by_outcde_yr_typ[price_stdev > (avg_price * 0.5), .N], big.mark = ",")` 
 groups where the standard deviation is greater than one half of the mean. These 
 are crude measures, but they indicate that simply comparing a property 
 transaction to the average will be insufficient in many parts of the country. 
@@ -504,7 +507,7 @@ transactions are outliers.
 ```{r}
 output_table <- copy(main_ppdata)
 output_table[, 
-             sd_mean_ratio := sd / avg_price][
+             sd_mean_ratio := price_stdev / avg_price][
                  , 
                  paste0("diff_", 
                         1:23) := lapply(1:23,  
