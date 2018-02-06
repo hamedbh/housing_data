@@ -521,54 +521,26 @@ output_table[,
              ]
 
 output_table <- output_table[grepl("[A-Za-z]{1,2}", outcde)]
+output_table <- output_table[, lapply(.SD, format, scientific = FALSE)]
+# Convert logical columns to numeric
+logical_cols <- names(which(sapply(output_table, is.logical)))
+for (column in logical_cols) {
+    output_table[, 
+                 column := as.numeric(get(column))]
+    
+}
 ```
 
-Create the output files.
+Create the output file.
 
 ```{r}
-if(!file.exists("outputs/output_table_xlformat.csv")) {
-    write_excel_csv(output_table, "outputs/output_table_xlformat.csv")
-}
-if(!file.exists("outputs/output_table_pipe.txt")) {
-    write_delim(output_table, "outputs/output_table_pipe.txt", delim = "|")
-}
-if(!file.exists("outputs/output_table.csv")) {
-    write_csv(output_table, "outputs/output_table.csv")
-}
-if(!file.exists("data/output_table.rds")) {
-    write_rds(output_table, "data/output_table.rds")
-}
-
-file_splits <- list(starts = c(1L, 
-                               as.integer(round(nrow(output_table)/2)) + 1L), 
-                    ends   = c(as.integer(round(nrow(output_table)/2)), 
-                               nrow(output_table)), 
-                    filenum = 1:2)
-
-# Write once with Windows line endings
-pwalk(file_splits, function(starts, ends, filenum) {
-    fwrite(x = output_table[starts:ends], 
-           file = paste0("output_table_pt", 
-                         filenum, 
-                         "_windows.txt"), 
-           sep = "|", 
-           eol = "\r\n", 
-           showProgress = TRUE, 
-           verbose = TRUE)
-})
-
-# Write again with normal line endings
-pwalk(file_splits, function(starts, ends, filenum) {
-    fwrite(x = output_table[starts:ends], 
-           file = paste0("output_table_pt", 
-                         filenum, 
-                         ".txt"), 
-           sep = "|", 
-           eol = "\r\n", 
-           showProgress = TRUE, 
-           verbose = TRUE)
-})
+fwrite(output_table, 
+       "outputs/output_table_pipe.txt", 
+       sep = "|", 
+       showProgress = T, 
+       verbose = T)
 ```
+
 
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
