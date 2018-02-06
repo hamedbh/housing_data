@@ -519,6 +519,8 @@ output_table[,
                  , 
                  scottish := NULL
              ]
+
+output_table <- output_table[grepl("[A-Za-z]{1,2}", outcde)]
 ```
 
 Create the output files.
@@ -536,6 +538,36 @@ if(!file.exists("outputs/output_table.csv")) {
 if(!file.exists("data/output_table.rds")) {
     write_rds(output_table, "data/output_table.rds")
 }
+
+file_splits <- list(starts = c(1L, 
+                               as.integer(round(nrow(output_table)/2)) + 1L), 
+                    ends   = c(as.integer(round(nrow(output_table)/2)), 
+                               nrow(output_table)), 
+                    filenum = 1:2)
+
+# Write once with Windows line endings
+pwalk(file_splits, function(starts, ends, filenum) {
+    fwrite(x = output_table[starts:ends], 
+           file = paste0("output_table_pt", 
+                         filenum, 
+                         "_windows.txt"), 
+           sep = "|", 
+           eol = "\r\n", 
+           showProgress = TRUE, 
+           verbose = TRUE)
+})
+
+# Write again with normal line endings
+pwalk(file_splits, function(starts, ends, filenum) {
+    fwrite(x = output_table[starts:ends], 
+           file = paste0("output_table_pt", 
+                         filenum, 
+                         ".txt"), 
+           sep = "|", 
+           eol = "\r\n", 
+           showProgress = TRUE, 
+           verbose = TRUE)
+})
 ```
 
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
