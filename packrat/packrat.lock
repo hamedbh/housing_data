@@ -132,6 +132,12 @@ Source: CRAN
 Version: 1.0-9
 Hash: d1e1fb479d41b9a934b8991b1f5e7ad6
 
+Package: forcats
+Source: CRAN
+Version: 0.2.0
+Hash: e5a3b0b96a39f5581467b0c6366f7408
+Requires: magrittr, tibble
+
 Package: ggplot2
 Source: CRAN
 Version: 2.2.1
@@ -164,6 +170,12 @@ Package: gtable
 Source: CRAN
 Version: 0.2.0
 Hash: cd78381a9d3fea966ac39bd0daaf5554
+
+Package: haven
+Source: CRAN
+Version: 1.1.1
+Hash: 06189d2da689a302b2a287dcdd011819
+Requires: Rcpp, forcats, hms, readr, tibble
 
 Package: highr
 Source: CRAN
