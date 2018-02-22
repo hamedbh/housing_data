@@ -67,7 +67,7 @@ create_full_data_all_years <- function() {
     if(!dir.exists("data/")) {
         dir.create("data/")
     }
-    setwd("data")
+    # setwd("data")
     walk(urls, function(x) {
         if(!file.exists(paste0("data/", basename(x)))) {
             download.file(x, paste0("data/", basename(x)), method = "curl")
@@ -271,8 +271,7 @@ pcdes <- rbindlist(lapply(fils,
 # 
 # Then we cross join that table with all possible years and property types.
 # Drop cols and duplicates from pcdes to save memory
-outcdes <- rbindlist(list(list(''), 
-                          unique(pcdes[, .(outcde)])))
+outcdes <- rbindlist(list(unique(pcdes[, .(outcde)])))
 
 # Prepare all_outcdes for binding with year and type data
 outcdes_yrs_typs <- CJ(outcde = outcdes$outcde, 
@@ -297,6 +296,7 @@ scot_outcde_regx <- paste0('^',
                            scot_area_cdes,
                            '[0-9]{1,2}',
                            collapse = '|')
+
 setkey(outcdes_yrs_typs, outcde, prop_typ, tax_year)
 setkey(by_outcde_yr_typ, outcde, prop_typ, tax_year)
 all_ppdata <- by_outcde_yr_typ[outcdes_yrs_typs][
@@ -315,6 +315,8 @@ which will make our analysis easier.
 ```{r}
 # Separate Scottish data
 main_ppdata <- all_ppdata[scottish == FALSE]
+sapply(main_ppdata, function(x) {sum(is.na(x))})
+
 main_ppdata$N[is.na(main_ppdata$N)] <- 0L
 scot_ppdata <- all_ppdata[scottish == TRUE]
 ```
