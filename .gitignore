@@ -45,3 +45,4 @@ data/*.rds
 outputs/*
 
 Untitled*.R
+outputs_for_github/*.txt
