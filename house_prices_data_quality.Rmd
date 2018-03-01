@@ -188,6 +188,45 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
 }
 ```
 
+Repeat the above grouping, but only by year and outcode, to allow for broader 
+comparisons if property type is not available.
+
+```{r, results = 'hide'}
+# Group the data by outcode and year, then summarise with a few key stats
+if(!exists('by_outcde_yr')) {
+    ifelse(file.exists('data/by_outcde_yr_all_yrs.rds'),
+           by_outcde_yr <- read_rds('data/by_outcde_yr_all_yrs.rds'),
+           by_outcde_yr <- full_data[, 
+                                     .(.N, 
+                                       avg_price = mean(price),
+                                       median_price = quantile(price, .50),
+                                       price_stdev = sd(price),
+                                       q05 = quantile(price, .05),
+                                       q10 = quantile(price, .10),
+                                       q15 = quantile(price, .15),
+                                       q20 = quantile(price, .20),
+                                       q25 = quantile(price, .25),
+                                       q30 = quantile(price, .30),
+                                       q35 = quantile(price, .35),
+                                       q40 = quantile(price, .40),
+                                       q45 = quantile(price, .45),
+                                       q55 = quantile(price, .55),
+                                       q60 = quantile(price, .60),
+                                       q65 = quantile(price, .65),
+                                       q70 = quantile(price, .70),
+                                       q75 = quantile(price, .75), 
+                                       q80 = quantile(price, .80),
+                                       q85 = quantile(price, .85),
+                                       q90 = quantile(price, .90),
+                                       q95 = quantile(price, .95)),
+                                     keyby = .(outcde, tax_year)])
+}
+
+# Write out the data.table to rds
+if(!file.exists('data/by_outcde_yr_all_yrs.rds')) {
+    write_rds(by_outcde_yr, 'data/by_outcde_yr_all_yrs.rds')
+}
+```
 
 # Property Price By Type and Location
 
@@ -278,6 +317,8 @@ outcdes_yrs_typs <- CJ(outcde = outcdes$outcde,
                        tax_year = 1995:2018,
                        prop_typ = c('D', 'F', 'O', 'S', 'T'))
 
+outcdes_yrs <- CJ(outcde = outcdes$outcde, 
+                  tax_year = 1995:2018)
 ```
 
 We now join the outcodes to the price paid data, and add a logical column to 
@@ -306,6 +347,16 @@ all_ppdata <- by_outcde_yr_typ[outcdes_yrs_typs][
 
 sapply(all_ppdata, function(x) {max(is.na(x))})
 sapply(all_ppdata, function(x) {sum(is.na(x))})
+
+# Now do a similar bind of postcodes to the table summarised by outcde and year 
+# only
+
+setkey(by_outcde_yr, outcde, tax_year)
+setkey(outcdes_yrs, outcde, tax_year)
+area_yr_ppdata <- by_outcde_yr[outcdes_yrs][
+    , 
+    scottish := (grepl(scot_outcde_regx, outcde))
+]
 ```
 
 Now we separate the Scottish data, leaving an object `main_ppdata` that we can 
@@ -319,6 +370,9 @@ sapply(main_ppdata, function(x) {sum(is.na(x))})
 
 main_ppdata$N[is.na(main_ppdata$N)] <- 0L
 scot_ppdata <- all_ppdata[scottish == TRUE]
+
+main_area_yr_ppdata <- area_yr_ppdata[scottish == FALSE]
+sapply(main_area_yr_ppdata, function(x) {sum(is.na(x))})
 ```
 
 For which outcode-year-type groups do we have sufficient data for reliable 
@@ -536,13 +590,55 @@ for (column in logical_cols) {
 Create the output file.
 
 ```{r}
-fwrite(output_table, 
-       "outputs/output_table_pipe.txt", 
-       sep = "|", 
-       showProgress = T, 
-       verbose = T)
+if (!file.exists("outputs/output_table_pipe.txt")) {
+    fwrite(output_table, 
+           "outputs/output_table_pipe.txt", 
+           sep = "|", 
+           showProgress = T, 
+           verbose = T)
+}
 ```
 
+Repeat the process of writing output tables, but aggregated only by outcode and 
+tax year.
+```{r}
+output_table2 <- copy(main_area_yr_ppdata)
+output_table2[, 
+              sd_mean_ratio := price_stdev / avg_price][
+                  , 
+                  paste0("diff_", 
+                         1:23) := lapply(1:23,  
+                                         function(x) {
+                                             avg_price / shift(avg_price, n = x)
+                                         }), 
+                  by = .(outcde)
+                  ][
+                      , 
+                      scottish := NULL
+                      ]
+
+output_table2 <- output_table2[grepl("[A-Za-z]{1,2}", outcde)]
+output_table2 <- output_table2[, lapply(.SD, format, scientific = FALSE)]
+# Convert logical columns to numeric
+logical_cols <- names(which(sapply(output_table2, is.logical)))
+for (column in logical_cols) {
+    output_table2[, 
+                  column := as.numeric(get(column))]
+    
+}
+```
+
+Create the output file.
+
+```{r}
+if (!file.exists("outputs/output_table2_pipe.txt")) {
+    fwrite(output_table2, 
+           "outputs/output_table2_pipe.txt", 
+           sep = "|", 
+           showProgress = T, 
+           verbose = T)
+}
+```
 
 [1]: http://www.homesandproperty.co.uk/property-news/buying/london-house-prices-2015s-top-ten-fastest-rising-boroughs-a93736.html
 [2]: https://www.theguardian.com/business/2017/sep/26/london-luxury-property-prices-brexit-savills-market-estate-agent
