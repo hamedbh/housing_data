@@ -1739,8 +1739,51 @@ library(stringr)</code></pre>
 <p>Now we create a function that will check whether the price paid data are present locally. If so it will read that into memory as <code>full_data</code>. If not it will download the price paid data and create the <code>full_data</code> object. The contents of this function show how the data will be structured (e.g. variable names and types).</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuICAgIGZ1bGxfZGF0YVtcbiAgICAgICAgLCBcbiAgICAgICAgcHJvcF90eXAgOj0gYXMuZmFjdG9yKHByb3BfdHlwKVxuICAgICAgICBdW1xuICAgICAgICAgICAgLCBcbiAgICAgICAgICAgIGMoXCJvdXRjZGVcIiwgXCJpbmNkZVwiKSA6PSB0c3Ryc3BsaXQocG9zdGNkZSwgXCIgXCIsIGZpeGVkID0gVFJVRSlcbiAgICAgICAgICAgIF1bXG4gICAgICAgICAgICAgICAgLCBcbiAgICAgICAgICAgICAgICBkYXRlX29mX3RyYW5zZmVyIDo9IGFzX2RhdGUoZGF0ZV9vZl90cmFuc2ZlcilcbiAgICAgICAgICAgICAgICBdW1xuICAgICAgICAgICAgICAgICAgICAsIFxuICAgICAgICAgICAgICAgICAgICB5ZWFyIDo9IHllYXIoZGF0ZV9vZl90cmFuc2ZlcilcbiAgICAgICAgICAgICAgICAgICAgXVtcbiAgICAgICAgICAgICAgICAgICAgICAgICwgXG4gICAgICAgICAgICAgICAgICAgICAgICB0YXhfeWVhciA6PSBjYXNlX3doZW4oXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgbW9udGgoZGF0ZV9vZl90cmFuc2ZlcikgPiA0IH4geWVhciArIDEsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgbW9udGgoZGF0ZV9vZl90cmFuc2ZlcikgPCA0IH4geWVhcixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBkYXkoZGF0ZV9vZl90cmFuc2ZlcikgPj0gNiAgfiB5ZWFyICsgMSwgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgVFJVRSAgICAgICAgICAgICAgICAgICAgICAgIH4geWVhcilcbiAgICAgICAgICAgICAgICAgICAgICAgIF1cblxuYGBgIn0= -->
-<pre class="r"><code>    full_data[
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY3JlYXRlX2Z1bGxfZGF0YV9hbGxfeWVhcnMgPC0gZnVuY3Rpb24oKSB7XG4gICAgbWFrZV91cmwgPC0gZnVuY3Rpb24oeWVhcikge1xuICAgICAgICBwYXN0ZTAoXCJodHRwOi8vcHJvZDIucHVibGljZGF0YS5sYW5kcmVnaXN0cnkuZ292LnVrLnMzLXdlYnNpdGUtZXUtd2VzdC0xLmFtYXpvbmF3cy5jb20vcHAtXCIsXG4gICAgICAgICAgICAgICB5ZWFyLFxuICAgICAgICAgICAgICAgXCIudHh0XCIpXG4gICAgfVxuICAgIFxuICAgIHllYXJzIDwtIHNlcSgxOTk1LCAyMDE3KVxuICAgIFxuICAgIHVybHMgPC0gbWFwX2Nocih5ZWFycywgbWFrZV91cmwpXG4gICAgaWYoIWRpci5leGlzdHMoXCJkYXRhL1wiKSkge1xuICAgICAgICBkaXIuY3JlYXRlKFwiZGF0YS9cIilcbiAgICB9XG4gICAgIyBzZXR3ZChcImRhdGFcIilcbiAgICB3YWxrKHVybHMsIGZ1bmN0aW9uKHgpIHtcbiAgICAgICAgaWYoIWZpbGUuZXhpc3RzKHBhc3RlMChcImRhdGEvXCIsIGJhc2VuYW1lKHgpKSkpIHtcbiAgICAgICAgICAgIGRvd25sb2FkLmZpbGUoeCwgcGFzdGUwKFwiZGF0YS9cIiwgYmFzZW5hbWUoeCkpLCBtZXRob2QgPSBcImN1cmxcIilcbiAgICAgICAgfVxuICAgIH0pXG4gICAgXG4gICAgbWFrZV9maWxlcGF0aHMgPC0gZnVuY3Rpb24oeWVhcikge1xuICAgICAgICBwYXN0ZTAoXCJkYXRhL3BwLVwiLFxuICAgICAgICAgICAgICAgeWVhcixcbiAgICAgICAgICAgICAgIFwiLnR4dFwiKVxuICAgIH1cbiAgICBcbiAgICBmaWxlcGF0aHMgPC0gbWFrZV9maWxlcGF0aHMoeWVhcnMpXG4gICAgXG4gICAgZGF0YWxpc3QgPC0gbWFwKGZpbGVwYXRocywgXG4gICAgICAgICAgICAgICAgICAgIGZ1bmN0aW9uKHgpIGZyZWFkKHgsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNlcCA9IFwiLFwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBoZWFkZXIgPSBGLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY29sLm5hbWVzID0gYygndHVpZCcsICdwcmljZScsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICdkYXRlX29mX3RyYW5zZmVyJywgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ3Bvc3RjZGUnLCAncHJvcF90eXAnLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAnb2xkX25ldycsICdkdXJhdGlvbicsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICdwYW9uJywgJ3Nhb24nLCAnc3RyZWV0JywgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ2xvY2FsaXR5JywgJ3Rvd24nLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAnZGlzdHJpY3QnLCAnY291bnR5JywgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ3BwZF90eXBlJywgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ3JlY19zdGF0dXMnKSkpXG4gICAgXG4gICAgZnVsbF9kYXRhIDwtIHJiaW5kbGlzdChkYXRhbGlzdClcbiAgICBmdWxsX2RhdGFbXG4gICAgICAgICwgXG4gICAgICAgIHByb3BfdHlwIDo9IGFzLmZhY3Rvcihwcm9wX3R5cClcbiAgICAgICAgXVtcbiAgICAgICAgICAgICwgXG4gICAgICAgICAgICBjKFwib3V0Y2RlXCIsIFwiaW5jZGVcIikgOj0gdHN0cnNwbGl0KHBvc3RjZGUsIFwiIFwiLCBmaXhlZCA9IFRSVUUpXG4gICAgICAgICAgICBdW1xuICAgICAgICAgICAgICAgICwgXG4gICAgICAgICAgICAgICAgZGF0ZV9vZl90cmFuc2ZlciA6PSBhc19kYXRlKGRhdGVfb2ZfdHJhbnNmZXIpXG4gICAgICAgICAgICAgICAgXVtcbiAgICAgICAgICAgICAgICAgICAgLCBcbiAgICAgICAgICAgICAgICAgICAgeWVhciA6PSB5ZWFyKGRhdGVfb2ZfdHJhbnNmZXIpXG4gICAgICAgICAgICAgICAgICAgIF1bXG4gICAgICAgICAgICAgICAgICAgICAgICAsIFxuICAgICAgICAgICAgICAgICAgICAgICAgdGF4X3llYXIgOj0gY2FzZV93aGVuKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1vbnRoKGRhdGVfb2ZfdHJhbnNmZXIpID4gNCB+IHllYXIgKyAxLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1vbnRoKGRhdGVfb2ZfdHJhbnNmZXIpIDwgNCB+IHllYXIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgZGF5KGRhdGVfb2ZfdHJhbnNmZXIpID49IDYgIH4geWVhciArIDEsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIFRSVUUgICAgICAgICAgICAgICAgICAgICAgICB+IHllYXIpXG4gICAgICAgICAgICAgICAgICAgICAgICBdXG4gICAgXG4gICAgd3JpdGVfcmRzKGZ1bGxfZGF0YSwgJy4vZGF0YS9mdWxsX2RhdGFfYWxsX3llYXJzLnJkcycpXG4gICAgXG4gICAgcm0oZGF0YWxpc3QpXG59XG5gYGAifQ== -->
+<pre class="r"><code>create_full_data_all_years &lt;- function() {
+    make_url &lt;- function(year) {
+        paste0(&quot;http://prod2.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-&quot;,
+               year,
+               &quot;.txt&quot;)
+    }
+    
+    years &lt;- seq(1995, 2017)
+    
+    urls &lt;- map_chr(years, make_url)
+    if(!dir.exists(&quot;data/&quot;)) {
+        dir.create(&quot;data/&quot;)
+    }
+    # setwd(&quot;data&quot;)
+    walk(urls, function(x) {
+        if(!file.exists(paste0(&quot;data/&quot;, basename(x)))) {
+            download.file(x, paste0(&quot;data/&quot;, basename(x)), method = &quot;curl&quot;)
+        }
+    })
+    
+    make_filepaths &lt;- function(year) {
+        paste0(&quot;data/pp-&quot;,
+               year,
+               &quot;.txt&quot;)
+    }
+    
+    filepaths &lt;- make_filepaths(years)
+    
+    datalist &lt;- map(filepaths, 
+                    function(x) fread(x,
+                                      sep = &quot;,&quot;,
+                                      header = F, 
+                                      col.names = c('tuid', 'price', 
+                                                    'date_of_transfer', 
+                                                    'postcde', 'prop_typ', 
+                                                    'old_new', 'duration', 
+                                                    'paon', 'saon', 'street', 
+                                                    'locality', 'town', 
+                                                    'district', 'county', 
+                                                    'ppd_type', 
+                                                    'rec_status')))
+    
+    full_data &lt;- rbindlist(datalist)
+    full_data[
         , 
         prop_typ := as.factor(prop_typ)
         ][
@@ -1760,11 +1803,12 @@ library(stringr)</code></pre>
                             day(date_of_transfer) &gt;= 6  ~ year + 1, 
                             TRUE                        ~ year)
                         ]
-</code></pre>
+    
+    write_rds(full_data, './data/full_data_all_years.rds')
+    
+    rm(datalist)
+}</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiU3VwcGxpZWQgMiBjb2x1bW5zIHRvIGJlIGFzc2lnbmVkIGEgbGlzdCAobGVuZ3RoIDMpIG9mIHZhbHVlcyAoMSB1bnVzZWQpXG4ifQ== -->
-<pre><code>Supplied 2 columns to be assigned a list (length 3) of values (1 unused)</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>The next step is to run that function, checking first that the required object is not already in memory.</p>
@@ -1786,6 +1830,38 @@ library(stringr)</code></pre>
 <p>Now apply grouping and summarising functions to the data to get what we need: entries for each combination of year, property type, and postcode area/outcode (e.g. M33, UB6).</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBHcm91cCB0aGUgZGF0YSBieSBvdXRjb2RlLCB5ZWFyLCBhbmQgcHJvcGVydHkgdHlwZSwgdGhlbiBzdW1tYXJpc2Ugd2l0aCBhIGZldyBcbiMga2V5IHN0YXRzXG5pZighZXhpc3RzKCdieV9vdXRjZGVfeXJfdHlwJykpIHtcbiAgICBpZmVsc2UoZmlsZS5leGlzdHMoJ2RhdGEvYnlfb3V0Y2RlX3lyX3R5cF9hbGxfeXJzLnJkcycpLFxuICAgICAgICAgICBieV9vdXRjZGVfeXJfdHlwIDwtIHJlYWRfcmRzKCdkYXRhL2J5X291dGNkZV95cl90eXBfYWxsX3lycy5yZHMnKSxcbiAgICAgICAgICAgYnlfb3V0Y2RlX3lyX3R5cCA8LSBmdWxsX2RhdGFbLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLiguTiwgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYXZnX3ByaWNlID0gbWVhbihwcmljZSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbWVkaWFuX3ByaWNlID0gcXVhbnRpbGUocHJpY2UsIC41MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcHJpY2Vfc3RkZXYgPSBzZChwcmljZSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTA1ID0gcXVhbnRpbGUocHJpY2UsIC4wNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTEwID0gcXVhbnRpbGUocHJpY2UsIC4xMCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTE1ID0gcXVhbnRpbGUocHJpY2UsIC4xNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTIwID0gcXVhbnRpbGUocHJpY2UsIC4yMCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTI1ID0gcXVhbnRpbGUocHJpY2UsIC4yNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTMwID0gcXVhbnRpbGUocHJpY2UsIC4zMCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTM1ID0gcXVhbnRpbGUocHJpY2UsIC4zNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTQwID0gcXVhbnRpbGUocHJpY2UsIC40MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTQ1ID0gcXVhbnRpbGUocHJpY2UsIC40NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTU1ID0gcXVhbnRpbGUocHJpY2UsIC41NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTYwID0gcXVhbnRpbGUocHJpY2UsIC42MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTY1ID0gcXVhbnRpbGUocHJpY2UsIC42NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTcwID0gcXVhbnRpbGUocHJpY2UsIC43MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTc1ID0gcXVhbnRpbGUocHJpY2UsIC43NSksIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE4MCA9IHF1YW50aWxlKHByaWNlLCAuODApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE4NSA9IHF1YW50aWxlKHByaWNlLCAuODUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE5MCA9IHF1YW50aWxlKHByaWNlLCAuOTApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE5NSA9IHF1YW50aWxlKHByaWNlLCAuOTUpKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAga2V5YnkgPSAuKG91dGNkZSwgcHJvcF90eXAsIHRheF95ZWFyKV0pXG59XG5gYGAifQ== -->
+<pre class="r"><code># Group the data by outcode, year, and property type, then summarise with a few 
+# key stats
+if(!exists('by_outcde_yr_typ')) {
+    ifelse(file.exists('data/by_outcde_yr_typ_all_yrs.rds'),
+           by_outcde_yr_typ &lt;- read_rds('data/by_outcde_yr_typ_all_yrs.rds'),
+           by_outcde_yr_typ &lt;- full_data[, 
+                                         .(.N, 
+                                           avg_price = mean(price),
+                                           median_price = quantile(price, .50),
+                                           price_stdev = sd(price),
+                                           q05 = quantile(price, .05),
+                                           q10 = quantile(price, .10),
+                                           q15 = quantile(price, .15),
+                                           q20 = quantile(price, .20),
+                                           q25 = quantile(price, .25),
+                                           q30 = quantile(price, .30),
+                                           q35 = quantile(price, .35),
+                                           q40 = quantile(price, .40),
+                                           q45 = quantile(price, .45),
+                                           q55 = quantile(price, .55),
+                                           q60 = quantile(price, .60),
+                                           q65 = quantile(price, .65),
+                                           q70 = quantile(price, .70),
+                                           q75 = quantile(price, .75), 
+                                           q80 = quantile(price, .80),
+                                           q85 = quantile(price, .85),
+                                           q90 = quantile(price, .90),
+                                           q95 = quantile(price, .95)),
+                                         keyby = .(outcde, prop_typ, tax_year)])
+}</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Save the summarised table to file to speed up the process when re-running.</p>
@@ -1802,8 +1878,10 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
 <p>Repeat the above grouping, but only by year and outcode, to allow for broader comparisons if property type is not available.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuICAgIGlmZWxzZShmaWxlLmV4aXN0cygnZGF0YS9ieV9vdXRjZGVfeXJfYWxsX3lycy5yZHMnKSxcbiAgICAgICAgICAgYnlfb3V0Y2RlX3lyIDwtIHJlYWRfcmRzKCdkYXRhL2J5X291dGNkZV95cl9hbGxfeXJzLnJkcycpLFxuICAgICAgICAgICBieV9vdXRjZGVfeXIgPC0gZnVsbF9kYXRhWywgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLiguTiwgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBhdmdfcHJpY2UgPSBtZWFuKHByaWNlKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1lZGlhbl9wcmljZSA9IHF1YW50aWxlKHByaWNlLCAuNTApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcHJpY2Vfc3RkZXYgPSBzZChwcmljZSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxMDUgPSBxdWFudGlsZShwcmljZSwgLjA1KSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHExMCA9IHF1YW50aWxlKHByaWNlLCAuMTApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTE1ID0gcXVhbnRpbGUocHJpY2UsIC4xNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxMjAgPSBxdWFudGlsZShwcmljZSwgLjIwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHEyNSA9IHF1YW50aWxlKHByaWNlLCAuMjUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTMwID0gcXVhbnRpbGUocHJpY2UsIC4zMCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxMzUgPSBxdWFudGlsZShwcmljZSwgLjM1KSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE0MCA9IHF1YW50aWxlKHByaWNlLCAuNDApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTQ1ID0gcXVhbnRpbGUocHJpY2UsIC40NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxNTUgPSBxdWFudGlsZShwcmljZSwgLjU1KSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE2MCA9IHF1YW50aWxlKHByaWNlLCAuNjApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTY1ID0gcXVhbnRpbGUocHJpY2UsIC42NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxNzAgPSBxdWFudGlsZShwcmljZSwgLjcwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE3NSA9IHF1YW50aWxlKHByaWNlLCAuNzUpLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE4MCA9IHF1YW50aWxlKHByaWNlLCAuODApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTg1ID0gcXVhbnRpbGUocHJpY2UsIC44NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxOTAgPSBxdWFudGlsZShwcmljZSwgLjkwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE5NSA9IHF1YW50aWxlKHByaWNlLCAuOTUpKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBrZXlieSA9IC4ob3V0Y2RlLCB0YXhfeWVhcildKVxuXG5gYGAifQ== -->
-<pre class="r"><code>    ifelse(file.exists('data/by_outcde_yr_all_yrs.rds'),
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBHcm91cCB0aGUgZGF0YSBieSBvdXRjb2RlIGFuZCB5ZWFyLCB0aGVuIHN1bW1hcmlzZSB3aXRoIGEgZmV3IGtleSBzdGF0c1xuaWYoIWV4aXN0cygnYnlfb3V0Y2RlX3lyJykpIHtcbiAgICBpZmVsc2UoZmlsZS5leGlzdHMoJ2RhdGEvYnlfb3V0Y2RlX3lyX2FsbF95cnMucmRzJyksXG4gICAgICAgICAgIGJ5X291dGNkZV95ciA8LSByZWFkX3JkcygnZGF0YS9ieV9vdXRjZGVfeXJfYWxsX3lycy5yZHMnKSxcbiAgICAgICAgICAgYnlfb3V0Y2RlX3lyIDwtIGZ1bGxfZGF0YVssIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC4oLk4sIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYXZnX3ByaWNlID0gbWVhbihwcmljZSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBtZWRpYW5fcHJpY2UgPSBxdWFudGlsZShwcmljZSwgLjUwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHByaWNlX3N0ZGV2ID0gc2QocHJpY2UpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTA1ID0gcXVhbnRpbGUocHJpY2UsIC4wNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxMTAgPSBxdWFudGlsZShwcmljZSwgLjEwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHExNSA9IHF1YW50aWxlKHByaWNlLCAuMTUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTIwID0gcXVhbnRpbGUocHJpY2UsIC4yMCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxMjUgPSBxdWFudGlsZShwcmljZSwgLjI1KSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHEzMCA9IHF1YW50aWxlKHByaWNlLCAuMzApLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTM1ID0gcXVhbnRpbGUocHJpY2UsIC4zNSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxNDAgPSBxdWFudGlsZShwcmljZSwgLjQwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE0NSA9IHF1YW50aWxlKHByaWNlLCAuNDUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTU1ID0gcXVhbnRpbGUocHJpY2UsIC41NSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxNjAgPSBxdWFudGlsZShwcmljZSwgLjYwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE2NSA9IHF1YW50aWxlKHByaWNlLCAuNjUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTcwID0gcXVhbnRpbGUocHJpY2UsIC43MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxNzUgPSBxdWFudGlsZShwcmljZSwgLjc1KSwgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxODAgPSBxdWFudGlsZShwcmljZSwgLjgwKSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHE4NSA9IHF1YW50aWxlKHByaWNlLCAuODUpLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcTkwID0gcXVhbnRpbGUocHJpY2UsIC45MCksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBxOTUgPSBxdWFudGlsZShwcmljZSwgLjk1KSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAga2V5YnkgPSAuKG91dGNkZSwgdGF4X3llYXIpXSlcbn1cbiMgV3JpdGUgb3V0IHRoZSBkYXRhLnRhYmxlIHRvIHJkc1xuaWYoIWZpbGUuZXhpc3RzKCdkYXRhL2J5X291dGNkZV95cl9hbGxfeXJzLnJkcycpKSB7XG4gICAgd3JpdGVfcmRzKGJ5X291dGNkZV95ciwgJ2RhdGEvYnlfb3V0Y2RlX3lyX2FsbF95cnMucmRzJylcbn1cbmBgYCJ9 -->
+<pre class="r"><code># Group the data by outcode and year, then summarise with a few key stats
+if(!exists('by_outcde_yr')) {
+    ifelse(file.exists('data/by_outcde_yr_all_yrs.rds'),
            by_outcde_yr &lt;- read_rds('data/by_outcde_yr_all_yrs.rds'),
            by_outcde_yr &lt;- full_data[, 
                                      .(.N, 
@@ -1829,7 +1907,11 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
                                        q90 = quantile(price, .90),
                                        q95 = quantile(price, .95)),
                                      keyby = .(outcde, tax_year)])
-</code></pre>
+}
+# Write out the data.table to rds
+if(!file.exists('data/by_outcde_yr_all_yrs.rds')) {
+    write_rds(by_outcde_yr, 'data/by_outcde_yr_all_yrs.rds')
+}</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -1852,11 +1934,11 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3RyKGZ1bGxfZGF0YSlcbmBgYCJ9 -->
 <pre class="r"><code>str(full_data)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiQ2xhc3NlcyDigJhkYXRhLnRhYmxl4oCZIGFuZCAnZGF0YS5mcmFtZSc6XHQyMjk2OTgwOCBvYnMuIG9mICAyMCB2YXJpYWJsZXM6XG4gJCB0dWlkICAgICAgICAgICAgOiBjaHIgIFwiezVCQkU5Q0IzLTYzMzItNEVCMC05Q0QzLTg3MzdDRUE0QTY1QX1cIiBcInsyMEUyNDQxQS0wRjE2LTQ5QUItOTdENC04NzM3RTYyQTVEOTN9XCIgXCJ7RDg5M0VFNjQtNDQ2NC00NEI1LUIwMUItOEU2MjQwM0VEODNDfVwiIFwie0Y5Rjc1M0E4LUU1NkEtNEVDQy05OTI3LThFNjI2QTQ3MUE5Mn1cIiAuLi5cbiAkIHByaWNlICAgICAgICAgICA6IGludCAgNDIwMDAgOTUwMDAgNzQ5NTAgNDM1MDAgNjMwMDAgMjk5OTUgMTA1MDAwIDEyMTI1MCA0MzAwMCAxMjg1MDAgLi4uXG4gJCBkYXRlX29mX3RyYW5zZmVyOiBEYXRlLCBmb3JtYXQ6IFwiMTk5NS0xMi0yMVwiIFwiMTk5NS0wMy0wM1wiIFwiMTk5NS0xMC0wM1wiIFwiMTk5NS0xMS0xNFwiIC4uLlxuICQgcG9zdGNkZSAgICAgICAgIDogY2hyICBcIk5FNCA5RE5cIiBcIlJNMTYgNFVSXCIgXCJDVzEwIDlFU1wiIFwiVFMyMyAzTEFcIiAuLi5cbiAkIHByb3BfdHlwICAgICAgICA6IEZhY3RvciB3LyA1IGxldmVscyBcIkRcIixcIkZcIixcIk9cIixcIlNcIiwuLjogNCA0IDEgNCA0IDQgMSAyIDUgNSAuLi5cbiAkIG9sZF9uZXcgICAgICAgICA6IGNociAgXCJOXCIgXCJOXCIgXCJZXCIgXCJOXCIgLi4uXG4gJCBkdXJhdGlvbiAgICAgICAgOiBjaHIgIFwiRlwiIFwiRlwiIFwiRlwiIFwiRlwiIC4uLlxuICQgcGFvbiAgICAgICAgICAgIDogY2hyICBcIjhcIiBcIjMwXCIgXCIxNVwiIFwiMTlcIiAuLi5cbiAkIHNhb24gICAgICAgICAgICA6IGNociAgXCJcIiBcIlwiIFwiXCIgXCJcIiAuLi5cbiAkIHN0cmVldCAgICAgICAgICA6IGNociAgXCJNQVRGRU4gUExBQ0VcIiBcIkhFQVRIIFJPQURcIiBcIlNIUk9QU0hJUkUgQ0xPU0VcIiBcIlNMRURNRVJFIENMT1NFXCIgLi4uXG4gJCBsb2NhbGl0eSAgICAgICAgOiBjaHIgIFwiRkVOSEFNXCIgXCJHUkFZU1wiIFwiTUlERExFV0lDSFwiIFwiQklMTElOR0hBTVwiIC4uLlxuICQgdG93biAgICAgICAgICAgIDogY2hyICBcIk5FV0NBU1RMRSBVUE9OIFRZTkVcIiBcIkdSQVlTXCIgXCJNSURETEVXSUNIXCIgXCJCSUxMSU5HSEFNXCIgLi4uXG4gJCBkaXN0cmljdCAgICAgICAgOiBjaHIgIFwiTkVXQ0FTVExFIFVQT04gVFlORVwiIFwiVEhVUlJPQ0tcIiBcIkNPTkdMRVRPTlwiIFwiU1RPQ0tUT04tT04tVEVFU1wiIC4uLlxuICQgY291bnR5ICAgICAgICAgIDogY2hyICBcIlRZTkUgQU5EIFdFQVJcIiBcIlRIVVJST0NLXCIgXCJDSEVTSElSRVwiIFwiU1RPQ0tUT04tT04tVEVFU1wiIC4uLlxuICQgcHBkX3R5cGUgICAgICAgIDogY2hyICBcIkFcIiBcIkFcIiBcIkFcIiBcIkFcIiAuLi5cbiAkIHJlY19zdGF0dXMgICAgICA6IGNociAgXCJBXCIgXCJBXCIgXCJBXCIgXCJBXCIgLi4uXG4gJCBvdXRjZGUgICAgICAgICAgOiBjaHIgIFwiTkU0XCIgXCJSTTE2XCIgXCJDVzEwXCIgXCJUUzIzXCIgLi4uXG4gJCBpbmNkZSAgICAgICAgICAgOiBjaHIgIFwiOUROXCIgXCI0VVJcIiBcIjlFU1wiIFwiM0xBXCIgLi4uXG4gJCB5ZWFyICAgICAgICAgICAgOiBudW0gIDE5OTUgMTk5NSAxOTk1IDE5OTUgMTk5NSAuLi5cbiAkIHRheF95ZWFyICAgICAgICA6IG51bSAgMTk5NiAxOTk1IDE5OTYgMTk5NiAxOTk2IC4uLlxuIC0gYXR0cigqLCBcIi5pbnRlcm5hbC5zZWxmcmVmXCIpPTxleHRlcm5hbHB0cj4gXG4ifQ== -->
+<!-- rnb-output-begin eyJkYXRhIjoiQ2xhc3NlcyDigJhkYXRhLnRhYmxl4oCZIGFuZCAnZGF0YS5mcmFtZSc6XHQyMjk2OTgwOCBvYnMuIG9mICAyMCB2YXJpYWJsZXM6XG4gJCB0dWlkICAgICAgICAgICAgOiBjaHIgIFwiezVCQkU5Q0IzLTYzMzItNEVCMC05Q0QzLTg3MzdDRUE0QTY1QX1cIiBcInsyMEUyNDQxQS0wRjE2LTQ5QUItOTdENC04NzM3RTYyQTVEOTN9XCIgXCJ7RDg5M0VFNjQtNDQ2NC00NEI1LUIwMUItOEU2MjQwM0VEODNDfVwiIFwie0Y5Rjc1M0E4LUU1NkEtNEVDQy05OTI3LThFNjI2QTQ3MUE5Mn1cIiAuLi5cbiAkIHByaWNlICAgICAgICAgICA6IGludCAgNDIwMDAgOTUwMDAgNzQ5NTAgNDM1MDAgNjMwMDAgMjk5OTUgMTA1MDAwIDEyMTI1MCA0MzAwMCAxMjg1MDAgLi4uXG4gJCBkYXRlX29mX3RyYW5zZmVyOiBEYXRlLCBmb3JtYXQ6IFwiMTk5NS0xMi0yMVwiIFwiMTk5NS0wMy0wM1wiIFwiMTk5NS0xMC0wM1wiIC4uLlxuICQgcG9zdGNkZSAgICAgICAgIDogY2hyICBcIk5FNCA5RE5cIiBcIlJNMTYgNFVSXCIgXCJDVzEwIDlFU1wiIFwiVFMyMyAzTEFcIiAuLi5cbiAkIHByb3BfdHlwICAgICAgICA6IEZhY3RvciB3LyA1IGxldmVscyBcIkRcIixcIkZcIixcIk9cIixcIlNcIiwuLjogNCA0IDEgNCA0IDQgMSAyIDUgNSAuLi5cbiAkIG9sZF9uZXcgICAgICAgICA6IGNociAgXCJOXCIgXCJOXCIgXCJZXCIgXCJOXCIgLi4uXG4gJCBkdXJhdGlvbiAgICAgICAgOiBjaHIgIFwiRlwiIFwiRlwiIFwiRlwiIFwiRlwiIC4uLlxuICQgcGFvbiAgICAgICAgICAgIDogY2hyICBcIjhcIiBcIjMwXCIgXCIxNVwiIFwiMTlcIiAuLi5cbiAkIHNhb24gICAgICAgICAgICA6IGNociAgXCJcIiBcIlwiIFwiXCIgXCJcIiAuLi5cbiAkIHN0cmVldCAgICAgICAgICA6IGNociAgXCJNQVRGRU4gUExBQ0VcIiBcIkhFQVRIIFJPQURcIiBcIlNIUk9QU0hJUkUgQ0xPU0VcIiBcIlNMRURNRVJFIENMT1NFXCIgLi4uXG4gJCBsb2NhbGl0eSAgICAgICAgOiBjaHIgIFwiRkVOSEFNXCIgXCJHUkFZU1wiIFwiTUlERExFV0lDSFwiIFwiQklMTElOR0hBTVwiIC4uLlxuICQgdG93biAgICAgICAgICAgIDogY2hyICBcIk5FV0NBU1RMRSBVUE9OIFRZTkVcIiBcIkdSQVlTXCIgXCJNSURETEVXSUNIXCIgXCJCSUxMSU5HSEFNXCIgLi4uXG4gJCBkaXN0cmljdCAgICAgICAgOiBjaHIgIFwiTkVXQ0FTVExFIFVQT04gVFlORVwiIFwiVEhVUlJPQ0tcIiBcIkNPTkdMRVRPTlwiIFwiU1RPQ0tUT04tT04tVEVFU1wiIC4uLlxuICQgY291bnR5ICAgICAgICAgIDogY2hyICBcIlRZTkUgQU5EIFdFQVJcIiBcIlRIVVJST0NLXCIgXCJDSEVTSElSRVwiIFwiU1RPQ0tUT04tT04tVEVFU1wiIC4uLlxuICQgcHBkX3R5cGUgICAgICAgIDogY2hyICBcIkFcIiBcIkFcIiBcIkFcIiBcIkFcIiAuLi5cbiAkIHJlY19zdGF0dXMgICAgICA6IGNociAgXCJBXCIgXCJBXCIgXCJBXCIgXCJBXCIgLi4uXG4gJCBvdXRjZGUgICAgICAgICAgOiBjaHIgIFwiTkU0XCIgXCJSTTE2XCIgXCJDVzEwXCIgXCJUUzIzXCIgLi4uXG4gJCBpbmNkZSAgICAgICAgICAgOiBjaHIgIFwiOUROXCIgXCI0VVJcIiBcIjlFU1wiIFwiM0xBXCIgLi4uXG4gJCB5ZWFyICAgICAgICAgICAgOiBudW0gIDE5OTUgMTk5NSAxOTk1IDE5OTUgMTk5NSAuLi5cbiAkIHRheF95ZWFyICAgICAgICA6IG51bSAgMTk5NiAxOTk1IDE5OTYgMTk5NiAxOTk2IC4uLlxuIC0gYXR0cigqLCBcIi5pbnRlcm5hbC5zZWxmcmVmXCIpPTxleHRlcm5hbHB0cj4gXG4ifQ== -->
 <pre><code>Classes ‘data.table’ and 'data.frame':  22969808 obs. of  20 variables:
  $ tuid            : chr  &quot;{5BBE9CB3-6332-4EB0-9CD3-8737CEA4A65A}&quot; &quot;{20E2441A-0F16-49AB-97D4-8737E62A5D93}&quot; &quot;{D893EE64-4464-44B5-B01B-8E62403ED83C}&quot; &quot;{F9F753A8-E56A-4ECC-9927-8E626A471A92}&quot; ...
  $ price           : int  42000 95000 74950 43500 63000 29995 105000 121250 43000 128500 ...
- $ date_of_transfer: Date, format: &quot;1995-12-21&quot; &quot;1995-03-03&quot; &quot;1995-10-03&quot; &quot;1995-11-14&quot; ...
+ $ date_of_transfer: Date, format: &quot;1995-12-21&quot; &quot;1995-03-03&quot; &quot;1995-10-03&quot; ...
  $ postcde         : chr  &quot;NE4 9DN&quot; &quot;RM16 4UR&quot; &quot;CW10 9ES&quot; &quot;TS23 3LA&quot; ...
  $ prop_typ        : Factor w/ 5 levels &quot;D&quot;,&quot;F&quot;,&quot;O&quot;,&quot;S&quot;,..: 4 4 1 4 4 4 1 2 5 5 ...
  $ old_new         : chr  &quot;N&quot; &quot;N&quot; &quot;Y&quot; &quot;N&quot; ...
@@ -1897,6 +1979,9 @@ if(!file.exists('data/by_outcde_yr_typ_all_yrs.rds')) {
 paste0(round((100 * nrow(by_outcde_yr_typ[N &gt; 10]) / nrow(by_outcde_yr_typ))),
        &quot;% of outcode, year, property type groups have at least 10 data points.&quot;)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiODQlIG9mIG91dGNvZGUsIHllYXIsIHByb3BlcnR5IHR5cGUgZ3JvdXBzIGhhdmUgYXQgbGVhc3QgMTAgZGF0YSBwb2ludHMuXCJcbiJ9 -->
+<pre><code>[1] &quot;84% of outcode, year, property type groups have at least 10 data points.&quot;</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>However we cannot be sure that every possible combination of tax year-property type-outcode is present in our data. So we compare our list to the reference list of postcode areas from the Ordnance Survey, to ensure that we have entries for every possible combination.</p>
@@ -1940,25 +2025,81 @@ outcdes_yrs &lt;- CJ(outcde = outcdes$outcde,
 <p>The two <code>sapply()</code> operations at the end of this section test for missing values in the combined dataset.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYXJlYV95cl9wcGRhdGEgPC0gYnlfb3V0Y2RlX3lyW291dGNkZXNfeXJzX3R5cHNdW1xuICAgICwgXG4gICAgc2NvdHRpc2ggOj0gKGdyZXBsKHNjb3Rfb3V0Y2RlX3JlZ3gsIG91dGNkZSkpXG5dXG5cbmBgYCJ9 -->
-<pre class="r"><code>area_yr_ppdata &lt;- by_outcde_yr[outcdes_yrs_typs][
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBMZWZ0IEpvaW4gZnVsbCBsaXN0IG9mIG91dGNvZGVzIHdpdGggdGhlIHByaWNlIHBhaWQgZGF0YSwgc2VlIHdoaWNoIGhhdmUgbm8gXG4jIGRhdGEuIEFkZCBsb2dpY2FsIGZvciBTY290dGlzaCBwY2Rlcy5cbnNjb3RfYXJlYV9jZGVzIDwtIGMoJ0FCJywgJ0REJywgJ0RHJywgJ0VIJywgJ0ZLJywgJ0cnLCAnSFMnLCAnSVYnLFxuICAgICAgICAgICAgICAgICAgICAnS0EnLCAnS1cnLCAnS1knLCAnTUwnLCAnUEEnLCAnUEgnLCAnVEQnLCAnWkUnKVxuc2NvdF9vdXRjZGVfcmVneCA8LSBwYXN0ZTAoJ14nLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgc2NvdF9hcmVhX2NkZXMsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAnWzAtOV17MSwyfScsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICBjb2xsYXBzZSA9ICd8JylcbnNldGtleShvdXRjZGVzX3lyc190eXBzLCBvdXRjZGUsIHByb3BfdHlwLCB0YXhfeWVhcilcbnNldGtleShieV9vdXRjZGVfeXJfdHlwLCBvdXRjZGUsIHByb3BfdHlwLCB0YXhfeWVhcilcbmFsbF9wcGRhdGEgPC0gYnlfb3V0Y2RlX3lyX3R5cFtvdXRjZGVzX3lyc190eXBzXVtcbiAgICAsIFxuICAgIHNjb3R0aXNoIDo9IChncmVwbChzY290X291dGNkZV9yZWd4LCBvdXRjZGUpKVxuXVxuc2FwcGx5KGFsbF9wcGRhdGEsIGZ1bmN0aW9uKHgpIHttYXgoaXMubmEoeCkpfSlcbmBgYCJ9 -->
+<pre class="r"><code># Left Join full list of outcodes with the price paid data, see which have no 
+# data. Add logical for Scottish pcdes.
+scot_area_cdes &lt;- c('AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV',
+                    'KA', 'KW', 'KY', 'ML', 'PA', 'PH', 'TD', 'ZE')
+scot_outcde_regx &lt;- paste0('^',
+                           scot_area_cdes,
+                           '[0-9]{1,2}',
+                           collapse = '|')
+setkey(outcdes_yrs_typs, outcde, prop_typ, tax_year)
+setkey(by_outcde_yr_typ, outcde, prop_typ, tax_year)
+all_ppdata &lt;- by_outcde_yr_typ[outcdes_yrs_typs][
     , 
     scottish := (grepl(scot_outcde_regx, outcde))
 ]
-</code></pre>
+sapply(all_ppdata, function(x) {max(is.na(x))})</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gYm1lcmdlKGksIHgsIGxlZnRjb2xzLCByaWdodGNvbHMsIGlvLCB4bywgcm9sbCwgcm9sbGVuZHMsIG5vbWF0Y2gsICA6IFxuICB0eXBlb2YgeC50YXhfeWVhciAoZG91YmxlKSAhPSB0eXBlb2YgaS5wcm9wX3R5cCAoY2hhcmFjdGVyKVxuIn0= -->
-<pre><code>Error in bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch,  : 
-  typeof x.tax_year (double) != typeof i.prop_typ (character)</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgb3V0Y2RlICAgICBwcm9wX3R5cCAgICAgdGF4X3llYXIgICAgICAgICAgICBOICAgIGF2Z19wcmljZSBtZWRpYW5fcHJpY2UgIHByaWNlX3N0ZGV2ICAgIHByaWNlX3ZhciBcbiAgICAgICAgICAgMCAgICAgICAgICAgIDAgICAgICAgICAgICAwICAgICAgICAgICAgMSAgICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMSAgICAgICAgICAgIDEgXG4gICAgICAgICBxMDUgICAgICAgICAgcTEwICAgICAgICAgIHExNSAgICAgICAgICBxMjAgICAgICAgICAgcTI1ICAgICAgICAgIHEzMCAgICAgICAgICBxMzUgICAgICAgICAgcTQwIFxuICAgICAgICAgICAxICAgICAgICAgICAgMSAgICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMSAgICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMSBcbiAgICAgICAgIHE0NSAgICAgICAgICBxNTUgICAgICAgICAgcTYwICAgICAgICAgIHE2NSAgICAgICAgICBxNzAgICAgICAgICAgcTc1ICAgICAgICAgIHE4MCAgICAgICAgICBxODUgXG4gICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMSAgICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMSAgICAgICAgICAgIDEgICAgICAgICAgICAxIFxuICAgICAgICAgcTkwICAgICAgICAgIHE5NSAgICAgc2NvdHRpc2ggXG4gICAgICAgICAgIDEgICAgICAgICAgICAxICAgICAgICAgICAgMCBcbiJ9 -->
+<pre><code>      outcde     prop_typ     tax_year            N    avg_price median_price  price_stdev    price_var 
+           0            0            0            1            1            1            1            1 
+         q05          q10          q15          q20          q25          q30          q35          q40 
+           1            1            1            1            1            1            1            1 
+         q45          q55          q60          q65          q70          q75          q80          q85 
+           1            1            1            1            1            1            1            1 
+         q90          q95     scottish 
+           1            1            0 </code></pre>
 <!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2FwcGx5KGFsbF9wcGRhdGEsIGZ1bmN0aW9uKHgpIHtzdW0oaXMubmEoeCkpfSlcbmBgYCJ9 -->
+<pre class="r"><code>sapply(all_ppdata, function(x) {sum(is.na(x))})</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgb3V0Y2RlICAgICBwcm9wX3R5cCAgICAgdGF4X3llYXIgICAgICAgICAgICBOICAgIGF2Z19wcmljZSBtZWRpYW5fcHJpY2UgIHByaWNlX3N0ZGV2ICAgIHByaWNlX3ZhciBcbiAgICAgICAgICAgMCAgICAgICAgICAgIDAgICAgICAgICAgICAwICAgICAgIDEyMzk5NSAgICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgIDEyOTYwOCAgICAgICAxMjk2MDggXG4gICAgICAgICBxMDUgICAgICAgICAgcTEwICAgICAgICAgIHExNSAgICAgICAgICBxMjAgICAgICAgICAgcTI1ICAgICAgICAgIHEzMCAgICAgICAgICBxMzUgICAgICAgICAgcTQwIFxuICAgICAgMTIzOTk1ICAgICAgIDEyMzk5NSAgICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgIDEyMzk5NSAgICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgIDEyMzk5NSBcbiAgICAgICAgIHE0NSAgICAgICAgICBxNTUgICAgICAgICAgcTYwICAgICAgICAgIHE2NSAgICAgICAgICBxNzAgICAgICAgICAgcTc1ICAgICAgICAgIHE4MCAgICAgICAgICBxODUgXG4gICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgIDEyMzk5NSAgICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgIDEyMzk5NSAgICAgICAxMjM5OTUgICAgICAgMTIzOTk1IFxuICAgICAgICAgcTkwICAgICAgICAgIHE5NSAgICAgc2NvdHRpc2ggXG4gICAgICAxMjM5OTUgICAgICAgMTIzOTk1ICAgICAgICAgICAgMCBcbiJ9 -->
+<pre><code>      outcde     prop_typ     tax_year            N    avg_price median_price  price_stdev    price_var 
+           0            0            0       123995       123995       123995       129608       129608 
+         q05          q10          q15          q20          q25          q30          q35          q40 
+      123995       123995       123995       123995       123995       123995       123995       123995 
+         q45          q55          q60          q65          q70          q75          q80          q85 
+      123995       123995       123995       123995       123995       123995       123995       123995 
+         q90          q95     scottish 
+      123995       123995            0 </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBOb3cgZG8gYSBzaW1pbGFyIGJpbmQgb2YgcG9zdGNvZGVzIHRvIHRoZSB0YWJsZSBzdW1tYXJpc2VkIGJ5IG91dGNkZSBhbmQgeWVhciBcbiMgb25seVxuc2V0a2V5KGJ5X291dGNkZV95ciwgb3V0Y2RlLCB0YXhfeWVhcilcbnNldGtleShvdXRjZGVzX3lycywgb3V0Y2RlLCB0YXhfeWVhcilcbmFyZWFfeXJfcHBkYXRhIDwtIGJ5X291dGNkZV95cltvdXRjZGVzX3lyc11bXG4gICAgLCBcbiAgICBzY290dGlzaCA6PSAoZ3JlcGwoc2NvdF9vdXRjZGVfcmVneCwgb3V0Y2RlKSlcbl1cbmBgYCJ9 -->
+<pre class="r"><code># Now do a similar bind of postcodes to the table summarised by outcde and year 
+# only
+setkey(by_outcde_yr, outcde, tax_year)
+setkey(outcdes_yrs, outcde, tax_year)
+area_yr_ppdata &lt;- by_outcde_yr[outcdes_yrs][
+    , 
+    scottish := (grepl(scot_outcde_regx, outcde))
+]</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Now we separate the Scottish data, leaving an object <code>main_ppdata</code> that we can use for analysis. We also impute zeroes for the <code>NA</code> entries in the <code>N</code> field, which will make our analysis easier.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2FwcGx5KG1haW5fYXJlYV95cl9wcGRhdGEsIGZ1bmN0aW9uKHgpIHtzdW0oaXMubmEoeCkpfSlcblxuYGBgIn0= -->
-<pre class="r"><code>sapply(main_area_yr_ppdata, function(x) {sum(is.na(x))})
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBTZXBhcmF0ZSBTY290dGlzaCBkYXRhXG5tYWluX3BwZGF0YSA8LSBhbGxfcHBkYXRhW3Njb3R0aXNoID09IEZBTFNFXVxuc2FwcGx5KG1haW5fcHBkYXRhLCBmdW5jdGlvbih4KSB7c3VtKGlzLm5hKHgpKX0pXG5gYGAifQ== -->
+<pre class="r"><code># Separate Scottish data
+main_ppdata &lt;- all_ppdata[scottish == FALSE]
+sapply(main_ppdata, function(x) {sum(is.na(x))})</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgb3V0Y2RlICAgICBwcm9wX3R5cCAgICAgdGF4X3llYXIgICAgICAgICAgICBOICAgIGF2Z19wcmljZSBtZWRpYW5fcHJpY2UgIHByaWNlX3N0ZGV2ICAgIHByaWNlX3ZhciBcbiAgICAgICAgICAgMCAgICAgICAgICAgIDAgICAgICAgICAgICAwICAgICAgICA2OTYwNCAgICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICA3NTE4NSAgICAgICAgNzUxODUgXG4gICAgICAgICBxMDUgICAgICAgICAgcTEwICAgICAgICAgIHExNSAgICAgICAgICBxMjAgICAgICAgICAgcTI1ICAgICAgICAgIHEzMCAgICAgICAgICBxMzUgICAgICAgICAgcTQwIFxuICAgICAgIDY5NjA0ICAgICAgICA2OTYwNCAgICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICA2OTYwNCAgICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICA2OTYwNCBcbiAgICAgICAgIHE0NSAgICAgICAgICBxNTUgICAgICAgICAgcTYwICAgICAgICAgIHE2NSAgICAgICAgICBxNzAgICAgICAgICAgcTc1ICAgICAgICAgIHE4MCAgICAgICAgICBxODUgXG4gICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICA2OTYwNCAgICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICA2OTYwNCAgICAgICAgNjk2MDQgICAgICAgIDY5NjA0IFxuICAgICAgICAgcTkwICAgICAgICAgIHE5NSAgICAgc2NvdHRpc2ggXG4gICAgICAgNjk2MDQgICAgICAgIDY5NjA0ICAgICAgICAgICAgMCBcbiJ9 -->
+<pre><code>      outcde     prop_typ     tax_year            N    avg_price median_price  price_stdev    price_var 
+           0            0            0        69604        69604        69604        75185        75185 
+         q05          q10          q15          q20          q25          q30          q35          q40 
+       69604        69604        69604        69604        69604        69604        69604        69604 
+         q45          q55          q60          q65          q70          q75          q80          q85 
+       69604        69604        69604        69604        69604        69604        69604        69604 
+         q90          q95     scottish 
+       69604        69604            0 </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWFpbl9wcGRhdGEkTltpcy5uYShtYWluX3BwZGF0YSROKV0gPC0gMExcbnNjb3RfcHBkYXRhIDwtIGFsbF9wcGRhdGFbc2NvdHRpc2ggPT0gVFJVRV1cbm1haW5fYXJlYV95cl9wcGRhdGEgPC0gYXJlYV95cl9wcGRhdGFbc2NvdHRpc2ggPT0gRkFMU0VdXG5zYXBwbHkobWFpbl9hcmVhX3lyX3BwZGF0YSwgZnVuY3Rpb24oeCkge3N1bShpcy5uYSh4KSl9KVxuYGBgIn0= -->
+<pre class="r"><code>main_ppdata$N[is.na(main_ppdata$N)] &lt;- 0L
+scot_ppdata &lt;- all_ppdata[scottish == TRUE]
+main_area_yr_ppdata &lt;- area_yr_ppdata[scottish == FALSE]
+sapply(main_area_yr_ppdata, function(x) {sum(is.na(x))})</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-output-begin eyJkYXRhIjoiICAgICAgb3V0Y2RlICAgICB0YXhfeWVhciAgICAgICAgICAgIE4gICAgYXZnX3ByaWNlIG1lZGlhbl9wcmljZSAgcHJpY2Vfc3RkZXYgICAgICAgICAgcTA1ICAgICAgICAgIHExMCBcbiAgICAgICAgICAgMCAgICAgICAgICAgIDAgICAgICAgICAzNjE0ICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgICAgICAgICAzNzUzICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgXG4gICAgICAgICBxMTUgICAgICAgICAgcTIwICAgICAgICAgIHEyNSAgICAgICAgICBxMzAgICAgICAgICAgcTM1ICAgICAgICAgIHE0MCAgICAgICAgICBxNDUgICAgICAgICAgcTU1IFxuICAgICAgICAzNjE0ICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgICAgICAgICAzNjE0ICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgICAgICAgICAzNjE0ICAgICAgICAgMzYxNCBcbiAgICAgICAgIHE2MCAgICAgICAgICBxNjUgICAgICAgICAgcTcwICAgICAgICAgIHE3NSAgICAgICAgICBxODAgICAgICAgICAgcTg1ICAgICAgICAgIHE5MCAgICAgICAgICBxOTUgXG4gICAgICAgIDM2MTQgICAgICAgICAzNjE0ICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgICAgICAgICAzNjE0ICAgICAgICAgMzYxNCAgICAgICAgIDM2MTQgICAgICAgICAzNjE0IFxuICAgIHNjb3R0aXNoIFxuICAgICAgICAgICAwIFxuIn0= -->
 <pre><code>      outcde     tax_year            N    avg_price median_price  price_stdev          q05          q10 
@@ -2011,7 +2152,7 @@ ggplot(main_ppdata, aes(N)) +
                       no_data = (N == 0))
             ]</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjMsIm5yb3ciOjN9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFRd2E3Q0lCQmNvSDBxaWZvU3Y2TTk2Qzk0OXVESnZJdkJXclVSd2JRWWpmSHdQdGJmMExvZ0pNb0JkbllZWmhubTA4V1lMemdBVUdBSkE4b1FKaFEzQWduMGJMMEFzQkVDZThKOUJTZDRyMDh1OEgzSDBmc2Z3TzBLWkhpUFRGTWxEbVdENE5jSjMyUlg2dk55TFl6d2ZVZnB6NWJNWXBOQ2lpYVlCSkxiRy9tbVJ2OUkzcXYxT1E5ejdRUHBQMjV0Mno2d1BDTnhSeDlOcFJWS3FjMmVSbE5JSFJIRGs3TFc2NnpZbmRRK20vaC9JZjVQK2g2emIyeEgwdFpicGQ3cXAxVGJTcFVocEJTclV2cG1nQkZjZ3Z4WVY4cUV5TWcydWRGR0JCMHZ0QXlNeXdiUEY5WW00cUxwQVFBQSJ9 -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjMsIm5yb3ciOjN9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFReXc3Q0lCQmNhT3VEeEVmaWQ5aEUvUVhQSGp3Wkx3WnIxVVlFMDJJMHhvTWY2MjlvWFJBUzVRQTdPd3l6RFBQcFlzd1dEQUFvUkhFTU5FSVlVOXdJeE5BMjlRb1FEUkNZRStZcVdNRjMvWEtlNzFpT1BwY0E5eHVRM2pNd1RTUS81aFdDdmhWK3laWlFsOVdHYSs3NnBsUy9MWm1GSnBuZ2xUZnhKRE0zMG0ySi9vRzhYYXBMNnVlYUI5SUhiblZkdjdDOEEzRlRuWFNoSkVxcHlaNEVVMGdaRVAyek5OYWJZYlkveThOd05IRWZROXluZEJ5Ty9yR1pTV3ZubFRpdlJpNTNoY3g5U3NIWHVYQk5GelBZQ09tcExLVDJtWkd0VXEwMDl6cVdLZUVaR3c3ZUh3VzhYYy9xQVFBQSJ9 -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["low_data"],"name":[1],"type":["lgl"],"align":["right"]},{"label":["no_data"],"name":[2],"type":["lgl"],"align":["right"]},{"label":["N"],"name":[3],"type":["int"],"align":["right"]}],"data":[{"1":"FALSE","2":"FALSE","3":"189530"},{"1":"TRUE","2":"FALSE","3":"31866"},{"1":"TRUE","2":"TRUE","3":"69604"}],"options":{"columns":{"min":{},"max":[10],"total":[3]},"rows":{"min":[10],"max":[10],"total":[3]},"pages":{}}}
@@ -2029,7 +2170,7 @@ ggplot(main_ppdata, aes(N)) +
             .(total_transactions = sum(N)), 
             by = .(N &gt;= 10)]</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjIsIm5yb3ciOjJ9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFRTzY3Q01CQmNPd21JU0h3RUYrRHAxVVNBYUtHaXBxQkNva0FtNUQwaWpJMXNJeWc1SDJmZ0xBbTJzU1ZrRi9zWjdjNTRkcjNjVE5OTkNnQVlvamdDSE9reXhqb2dpS0ZsOGgwZ0d0Z0JnTlJsQkovWE5qM2FQbCtBZjM2RHhZU1JjeUYxMGJOTEg3QzVHaTdtdzhuWXRYM0ZGYUU3SlFpVEpGY2xaekpreVNtUm5zV0Q2WUVva3YwSkxSQ010d1MvWlY3WS91NmhRMTNYbFU1Vk1OemtGeWVKamNFa1VFRWlBTHBYWnFnUG8veDRaYWZSekIzayt4aklIZWlyTnBLNGRsU0pvMm9VN0w5a2hUZEp5YjZncnVsb0M5WkJkaEVsVTk2eVJtVm16K1dSbkZPUFdHOVF2UUd5clhSWHpnRUFBQT09In0= -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjIsIm5yb3ciOjJ9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFRdTQ3Q01CQmNPOGtoSW9FUTl3TkIxSWtJb29XSytvcXJrQ2lRQ1FFaWpJMXNvN3VTNytNYjdsdVNzNDB0SWJ2WXgyaDN4clBmNjgwODNhUUFnQ0dLWThDUkxtT3NBNElZK2liL0FrU2ZkZ0FnZFJuQjZ3MU1qN2JQUDhDVGFiQ1lNSEt0cFM1R2R1a0Y5cjZ5MVRJclo2NGRLNjRJM1NsQm1DU1ZhamlUSVV0RmlmUXNIa3dQUkpIaUtMUkFNTjRYL0tmd3d2WjNEeDI2cm10MWFvUGhIcjg1U1d3TUpvRUtFZ0V3dWpORGZjaXI4NTFkOG5MaEx2SitEZVF1OUZZYlRkdzVyc1J4ZmRUczFMRGF1NlJrWDFQWERMVUhhNkc0aVlZcDcxbWpzckQzOGtqRnFVZXNPV2ovQVUzakhzM1BBUUFBIn0= -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["N >= 10"],"name":[1],"type":["lgl"],"align":["right"]},{"label":["total_transactions"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"TRUE","2":"22792924"},{"1":"FALSE","2":"139555"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[2]},"pages":{}}}
@@ -2046,7 +2187,7 @@ ggplot(main_ppdata, aes(N)) +
             .(total_transactions = sum(N)), 
             by = .(N &gt;= 20)]</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjIsIm5yb3ciOjJ9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFRdTI3Q01CUzljUjRva2FDby9ZR01YUkpWUVl3d2RlN1FoV3pJRFdrYjFkaVJiUVFqLzhiYWIwcnF1TmNEWHU3ajZQZ2NuL3YrV2xkWm5RRUFnVEFLZ1lSbWpJZ3BBVVNRVHYwQ0VENVpBa0NHSFN3QllHNzM1UFliN0o1WDNzT1kwMk9yekxDMHBIOXc5cFp2TjNuMWd1dWpGcHF5dlphVUs5cm9UbkRscXpTTUtxZml3T3hBTlMwL3BUSHc2S2tVNTlJWjI5OWRUUm5IY1RCdDhNZ3owYU1sbVFMR25rc2dQZURoeENmcFE5RjhuL2hQc2NhREJIaVFPYzdrZnA0c3lZaFNNVW9sTGYvcWVPdENNdnJSTWx3V0pvSk5VUGF5NDlwRk5xZ3E3YmtjMGdqbUVKc05oajkwVkdmRHpnRUFBQT09In0= -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjIsIm5yb3ciOjJ9LCJyZGYiOiJINHNJQUFBQUFBQUFBMTFRdTQ3Q01CRGNPQWtva1VDSSs0R1VOSWw0aUJJcTZpdXVnUTZaRUNEQzJNZzJ1aXY1TjlyN3B1UWMzN3JBelQ1RzR4blBmbTEyODNTWEFnQ0JNSXFBaEdhTWlDa0JSSkIwL1FjZy9MQUVnQlE3V0FMQXdPNjkxMit3blN5OGh6R250MHFaWVdSSi8yRC9NMXV2c3ZrVTE3RVdtcks5bHBRcld1cGFjT1dybEl3cXArTEE5RWcxTFU3U0dIajBSSXJ2d2huYjN6MU5hZHUyTWEzeHlIMXhSMHZTQll3OWwwQjZ3T2pCTytsalhsNGUvSnJQbG5pUkFDOHl3Sm04ejUwbmFWRXJScTFleGM4MXIxeEtSZzhWdzJWb010Z0l4VjNXWEx2TUJsV0Z2WmREU3NFY1lzTkI4d2ZWcXRBSnp3RUFBQT09In0= -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["N >= 20"],"name":[1],"type":["lgl"],"align":["right"]},{"label":["total_transactions"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"FALSE","2":"443340"},{"1":"TRUE","2":"22489139"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[2]},"pages":{}}}
@@ -2100,7 +2241,7 @@ data_totals[good_data_totals][,
 <pre class="r"><code>by_outcde_yr_typ[prop_typ == &quot;T&quot; &amp; tax_year == 2017 &amp; outcde == &quot;W14&quot;, 
                  .(avg_price, median_price, price_stdev, q25, q75)]</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjUsIm5yb3ciOjF9LCJyZGYiOiJINHNJQUFBQUFBQUFBd3R5aVREaWl1QmlZR0JnWW1CbVlXWmdZZ1l5V1ppQUJDTURDd01uaUs1Z1lHQVdCakpZZ1pnUEpPRG84b1JYYzgyeXpYQytROVVCQmdpQThMMVdHNnVIbG55Rzg0MnZLYURJdS95V2dIQlJMR0xOUzh4TkxRWXlCTUNXUVFRNUU4dlM0d3VLTXBOVG9RSTh1YWtwbVlsNUtHTGNZRTU4Y1VsS2FobFVpTG5ReUJUT05EZEZ0eW81SjdFWVpoVk1rQ3Nsc1NSUkw2MEk2QW8wNVp4RitlVjZNTmZ4Z3NLcUFVajhCd0lnOVE5Tk1YdCtRVWxtZmg1UUtSTXMxSkJ0WVN4Q0UrQXZ6UU1abmFLYm5GR2FsNjFyRG5JSldCb0NlS0ZzUmlRMks4UktwdjlvZ2NXV21wZWVtUWNMRmRhY3hLVFVIQ2lIRCtnRnNBLzBnR0dWVndMek1sQzBXSzhrdnlRUnBvNHJPVDhISmdMMkc4TS9BRVUrRzZJakFnQUEifQ== -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5jb2wiOjUsIm5yb3ciOjF9LCJyZGYiOiJINHNJQUFBQUFBQUFBd3R5aVREaWl1QmlZR0JnWW1CbVlXRmdZZ1l5V1ppQUJDTURDd01uaUs1Z1lHQVdCakpZZ1pnUEpPRG84b1JYYzgyeXpYQytROVVCQmdpQThMMVdHNnVIbG55Rzg0MnZLYURJdS95V2dIQlJMR0xOUzh4TkxRWXlCTUNXUVFRNUU4dlM0d3VLTXBOVG9RSTh1YWtwbVlsNUtHTGNZRTU4Y1VsS2FobFVpTG5ReUJUT05EZEZ0eW81SjdFWVpoVk1rQ3Nsc1NSUkw2MEk2QW8wNVp4RitlVjZNTmZ4Z3NLcUFVajhCd0lnOVE5Tk1YdCtRVWxtZmg1UUtSTXMxSkJ0WVN4Q0V4QW96UU1abmFLYm5GR2FsNjFyYUE1eUNsZ2VBbmloYkVZa05pdkVUcWIvYUtIRmxwcVhucGtIQ3hiV25NU2sxQndvaHcvb0I3QVg5SUNCbFZjQzh6TlF0Rml2Skw4a0VhYU9LemsvQnlZQzloekRQd0JuSmQwMkpBSUFBQT09In0= -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["avg_price"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["median_price"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["price_stdev"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["q25"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["q75"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"2738202","2":"2160000","3":"3495526","4":"1300000","5":"2750000"}],"options":{"columns":{"min":{},"max":[10],"total":[5]},"rows":{"min":[10],"max":[10],"total":[1]},"pages":{}}}
@@ -2193,12 +2334,21 @@ for (column in logical_cols) {
 <p>Create the output file.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaWYgKCFmaWxlLmV4aXN0cyhcIm91dHB1dHMvb3V0cHV0X3RhYmxlX3BpcGUudHh0XCIpKSB7XG4gICAgZndyaXRlKG91dHB1dF90YWJsZSwgXG4gICAgICAgICAgIFwib3V0cHV0cy9vdXRwdXRfdGFibGVfcGlwZS50eHRcIiwgXG4gICAgICAgICAgIHNlcCA9IFwifFwiLCBcbiAgICAgICAgICAgc2hvd1Byb2dyZXNzID0gVCwgXG4gICAgICAgICAgIHZlcmJvc2UgPSBUKVxufVxuYGBgIn0= -->
+<pre class="r"><code>if (!file.exists(&quot;outputs/output_table_pipe.txt&quot;)) {
+    fwrite(output_table, 
+           &quot;outputs/output_table_pipe.txt&quot;, 
+           sep = &quot;|&quot;, 
+           showProgress = T, 
+           verbose = T)
+}</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Repeat the process of writing output tables, but aggregated only by outcode and tax year.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3V0cHV0X3RhYmxlMiA8LSBjb3B5KG1haW5fYXJlYV95cl9wcGRhdGEpXG5vdXRwdXRfdGFibGUyWywgXG4gICAgICAgICAgICAgIHNkX21lYW5fcmF0aW8gOj0gcHJpY2Vfc3RkZXYgLyBhdmdfcHJpY2VdW1xuICAgICAgICAgICAgICAgICAgLCBcbiAgICAgICAgICAgICAgICAgIHBhc3RlMChcImRpZmZfXCIsIFxuICAgICAgICAgICAgICAgICAgICAgICAgIDE6MjMpIDo9IGxhcHBseSgxOjIzLCAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZ1bmN0aW9uKHgpIHtcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGF2Z19wcmljZSAvIHNoaWZ0KGF2Z19wcmljZSwgbiA9IHgpXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIH0pLCBcbiAgICAgICAgICAgICAgICAgIGJ5ID0gLihvdXRjZGUpXG4gICAgICAgICAgICAgICAgICBdW1xuICAgICAgICAgICAgICAgICAgICAgICwgXG4gICAgICAgICAgICAgICAgICAgICAgc2NvdHRpc2ggOj0gTlVMTFxuICAgICAgICAgICAgICAgICAgICAgIF1cblxub3V0cHV0X3RhYmxlMiA8LSBvdXRwdXRfdGFibGUyW2dyZXBsKFwiW0EtWmEtel17MSwyfVwiLCBvdXRjZGUpXVxub3V0cHV0X3RhYmxlMiA8LSBvdXRwdXRfdGFibGUyWywgbGFwcGx5KC5TRCwgZm9ybWF0LCBzY2llbnRpZmljID0gRkFMU0UpXVxuIyBDb252ZXJ0IGxvZ2ljYWwgY29sdW1ucyB0byBudW1lcmljXG5sb2dpY2FsX2NvbHMgPC0gbmFtZXMod2hpY2goc2FwcGx5KG91dHB1dF90YWJsZTIsIGlzLmxvZ2ljYWwpKSlcbmZvciAoY29sdW1uIGluIGxvZ2ljYWxfY29scykge1xuICAgIG91dHB1dF90YWJsZTJbLCBcbiAgICAgICAgICAgICAgICAgIGNvbHVtbiA6PSBhcy5udW1lcmljKGdldChjb2x1bW4pKV1cbiAgICBcbn1cbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3V0cHV0X3RhYmxlMiA8LSBjb3B5KG1haW5fYXJlYV95cl9wcGRhdGEpXG5vdXRwdXRfdGFibGUyWywgXG4gICAgICAgICAgICAgIHNkX21lYW5fcmF0aW8gOj0gcHJpY2Vfc3RkZXYgLyBhdmdfcHJpY2VdW1xuICAgICAgICAgICAgICAgICAgLCBcbiAgICAgICAgICAgICAgICAgIHBhc3RlMChcImRpZmZfXCIsIFxuICAgICAgICAgICAgICAgICAgICAgICAgIDE6MjMpIDo9IGxhcHBseSgxOjIzLCAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZ1bmN0aW9uKHgpIHtcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGF2Z19wcmljZSAvIHNoaWZ0KGF2Z19wcmljZSwgbiA9IHgpXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIH0pLCBcbiAgICAgICAgICAgICAgICAgIGJ5ID0gLihvdXRjZGUpXG4gICAgICAgICAgICAgICAgICBdW1xuICAgICAgICAgICAgICAgICAgICAgICwgXG4gICAgICAgICAgICAgICAgICAgICAgc2NvdHRpc2ggOj0gTlVMTFxuICAgICAgICAgICAgICAgICAgICAgIF1cbm91dHB1dF90YWJsZTIgPC0gb3V0cHV0X3RhYmxlMltncmVwbChcIltBLVphLXpdezEsMn1cIiwgb3V0Y2RlKV1cbm91dHB1dF90YWJsZTIgPC0gb3V0cHV0X3RhYmxlMlssIGxhcHBseSguU0QsIGZvcm1hdCwgc2NpZW50aWZpYyA9IEZBTFNFKV1cbiMgQ29udmVydCBsb2dpY2FsIGNvbHVtbnMgdG8gbnVtZXJpY1xubG9naWNhbF9jb2xzIDwtIG5hbWVzKHdoaWNoKHNhcHBseShvdXRwdXRfdGFibGUyLCBpcy5sb2dpY2FsKSkpXG5mb3IgKGNvbHVtbiBpbiBsb2dpY2FsX2NvbHMpIHtcbiAgICBvdXRwdXRfdGFibGUyWywgXG4gICAgICAgICAgICAgICAgICBjb2x1bW4gOj0gYXMubnVtZXJpYyhnZXQoY29sdW1uKSldXG4gICAgXG59XG5gYGAifQ== -->
 <pre class="r"><code>output_table2 &lt;- copy(main_area_yr_ppdata)
 output_table2[, 
               sd_mean_ratio := price_stdev / avg_price][
@@ -2213,7 +2363,6 @@ output_table2[,
                       , 
                       scottish := NULL
                       ]
-
 output_table2 &lt;- output_table2[grepl(&quot;[A-Za-z]{1,2}&quot;, outcde)]
 output_table2 &lt;- output_table2[, lapply(.SD, format, scientific = FALSE)]
 # Convert logical columns to numeric
